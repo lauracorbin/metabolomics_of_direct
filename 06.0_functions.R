@@ -141,7 +141,7 @@ corbin_biplot_for_ppca = function(PCA, dataframe_of_phenotypes, pheno_list, npcs
         cormat_to_write$clinical.variable <- row.names(cormat_to_write)
         cormat_to_write <- cormat_to_write[,c(ncol(cormat_to_write),1:(ncol(cormat_to_write)-1))]
         print(cormat_to_write)
-        write.table(cormat_to_write,file=paste0(results_dir,"Tables\\TableS5_",filename,"_pca_pheno_cor.txt"),
+        write.table(cormat_to_write,file=paste0(results_dir,"Tables\\TableS7_",filename,"_pca_pheno_cor.txt"),
                     sep="\t", quote=F,row.names = FALSE)
         
         # keep only those that have p<0.05 for PC1 and or 2

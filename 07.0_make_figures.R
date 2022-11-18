@@ -1,6 +1,6 @@
 # This script makes figures from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 1st April 2022
+# last run: 9th Nov 2022
 
 ####################################################################################
 ####################################################################################
@@ -152,7 +152,7 @@ saveRDS(merged_lm_results,file=paste0(results_dir,"merged_lm_results.rds"))
 
 ####################################################################################
 ####################################################################################
-## volcano plot - Figure 2
+## volcano plot - Figure S2
 ####################################################################################
 ####################################################################################
 
@@ -167,13 +167,13 @@ merged_lm_results$panel <- as.factor(merged_lm_results$panel)
 metab_shape <- with(merged_lm_results, data.frame(panel = levels(panel),shape = c(18,20) ))
 
 # make volcano
-filename <- paste0(results_dir,"Figures\\ForPaper\\Figure2_lm_results_all_volcano")
+filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS2_lm_results_all_volcano")
 make.volcano(dtst=merged_lm_results, title="", filename=filename, plot_col=metab_col$colour[match(merged_lm_results$super.pathway,metab_col$pathway)], 
              hline=-log10(0.05), legend_one=as.character(metab_col$pathway),legend_col=metab_col$colour,
              plot_shape=metab_shape$shape[match(merged_lm_results$panel,metab_shape$panel)],
              legend_two=as.character(metab_shape$panel), legend_shape=metab_shape$shape)
 
-filename <- paste0(results_dir,"Figures\\Figure2_lm_results_all_volcano_dh")
+filename <- paste0(results_dir,"Figures\\FigureS2_lm_results_all_volcano_dh")
 make.volcano.dh(dtst=merged_lm_results, title="", filename=filename, plot_col=metab_col$colour[match(merged_lm_results$super.pathway,metab_col$pathway)], 
              hline=-log10(0.05), legend_one=as.character(metab_col$pathway),legend_col=metab_col$colour,
              plot_shape=metab_shape$shape[match(merged_lm_results$panel,metab_shape$panel)],
@@ -184,7 +184,7 @@ hist(-log10(merged_lm_results$rnt_lm_treat_HolmAdjP),main="",ylab="",xlab="",yax
 
 ####################################################################################
 ####################################################################################
-## presentation of enrichment - Figure 3
+## presentation of enrichment - Figure S4
 ####################################################################################
 ####################################################################################
 
@@ -220,7 +220,7 @@ names(stacked_bar_data)[2] <- "freq_overall"
 names(stacked_bar_data)[3] <- "Percentage.in.class"
 
 # plot stacked bar
-filename <- paste0(results_dir,"Figures\\ForPaper\\Figure3_class_distribution.pdf")
+filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS4_class_distribution.pdf")
 pdf(filename)
 ggplot(stacked_bar_data, aes(fill=super.pathway,y=Percentage.in.class,x=outcome)) +
   geom_bar(position="stack",stat="identity",colour="black",size=0.1) +
@@ -267,7 +267,7 @@ invisible(dev.off())
 
 #################################################################################### 
 ####################################################################################
-## heatmap with additional factors - Figure S3
+## heatmap with additional factors - Figure S7
 ####################################################################################
 ####################################################################################
 
@@ -345,7 +345,7 @@ for (i in 1:nrow(lm_feature_ids)) {
 
 #### plot with all follow up features ####
 # make plot
-filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS4_heatmap_all_followup_features")
+filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS7_heatmap_all_followup_features")
 temp_data <- make.heatmap(dtst=heatmap_data_only,feature_ids=lm_feature_ids,filename=filename,colcolours=ColSideColors[,c(1,3)])
 
 

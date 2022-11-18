@@ -1,6 +1,6 @@
 # This script makes results tables from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 1st April 2022
+# last run: 11th Nov 2022
 
 ####################################################################################
 ####################################################################################
@@ -292,7 +292,7 @@ write.table(lm_results_tables$metab[,c(1,ncol(lm_results_tables$metab),2:(ncol(l
 
 
 ####################################################################################
-## Table S6 - Metabolon PA full results
+## Table S9 - Metabolon PA full results
 ####################################################################################
 
 # check model fails
@@ -358,11 +358,11 @@ names(metab_pa_output_to_export) <- c("Biochemical.name","Super.pathway","Sub.pa
                                     "State.in.intervention.group","Allocation.assoc.flag","Allocation.p.rank")
 
 # save out required var
-filename <- paste0(results_dir,"Tables\\TableS6_metab_pa_results.txt")
+filename <- paste0(results_dir,"Tables\\TableS9_metab_pa_results.txt")
 write.table(metab_pa_output_to_export,file=filename,sep="\t",row.names=F,quote=F)
 
 ###################################################################################
-## Table 2 - associated representative from LM
+## Table S5 - associated representative from LM
 ####################################################################################
 
 ## metabolon ##
@@ -484,32 +484,32 @@ table(main_assoc$Source.platform)
 main_assoc_identified <- main_assoc[main_assoc$Super.pathway != "Unclassified",]
 
 # save out required var
-filename <- paste0(results_dir,"Tables\\Table2_primary_results.txt")
+filename <- paste0(results_dir,"Tables\\TableS5_primary_results.txt")
 write.table(main_assoc_identified,file=filename,sep="\t",row.names=F,quote=F)
 
 
 ###################################################################################
-## Table 3 - associated from PA
+## Table ? - associated from PA
 ####################################################################################
-
-## metabolon ##
-# start with suppl table version
-pa_assoc <- metab_pa_output_to_export
-
-# restrict to representative and associated
-pa_assoc <- pa_assoc[pa_assoc$Allocation.assoc.flag == 1,]
-pa_assoc <- pa_assoc[,c("Biochemical.name", "Super.pathway", "Sub.pathway", "Allocation.beta","Allocation.lower.95CI","Allocation.upper.95CI",
-                                        "Allocation.p", "State.in.intervention.group")]
-
-# restrict to identified only
-pa_assoc <- pa_assoc[!is.na(pa_assoc$Super.pathway),]
-
-# sort
-pa_assoc <-  pa_assoc[order(as.numeric(pa_assoc$Allocation.beta)),]
-
-# save out required var
-filename <- paste0(results_dir,"Tables\\Table3_pa_results.txt")
-write.table(pa_assoc,file=filename,sep="\t",row.names=F,quote=F)
+# 
+# ## metabolon ##
+# # start with suppl table version
+# pa_assoc <- metab_pa_output_to_export
+# 
+# # restrict to representative and associated
+# pa_assoc <- pa_assoc[pa_assoc$Allocation.assoc.flag == 1,]
+# pa_assoc <- pa_assoc[,c("Biochemical.name", "Super.pathway", "Sub.pathway", "Allocation.beta","Allocation.lower.95CI","Allocation.upper.95CI",
+#                                         "Allocation.p", "State.in.intervention.group")]
+# 
+# # restrict to identified only
+# pa_assoc <- pa_assoc[!is.na(pa_assoc$Super.pathway),]
+# 
+# # sort
+# pa_assoc <-  pa_assoc[order(as.numeric(pa_assoc$Allocation.beta)),]
+# 
+# # save out required var
+# filename <- paste0(results_dir,"Tables\\Table3_pa_results.txt")
+# write.table(pa_assoc,file=filename,sep="\t",row.names=F,quote=F)
 
 
 ##################

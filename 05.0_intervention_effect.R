@@ -1,7 +1,7 @@
 # This script runs analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 # both linear model and logistics model (on P/A) included
 
-# last run: 31st March 2022
+# last run: 9th Nov 2022
 
 ####################################################################################
 ####################################################################################
@@ -127,8 +127,15 @@ for (j in 1:length(datasets_to_run)){
             # check for model fail because one of coef missing
             if ( (nrow(coef) == 7) ) {
               # run anova to calculate variance explained by each factor individually
-              a = anova(fitA)
-              eta = a[,2]/sum(a[,2],na.rm=T)
+              # alternative calc using Anova from car package (type 2) - need to restrict to cases where estimation possible
+              if ( fitA$df.residual > 0 & (deviance(fitA) > sqrt(.Machine$double.eps)) ) {
+                a = Anova(fitA)
+                eta = a[,1]/sum(a[,1],na.rm=T)
+              } else {
+                eta = c(NA,NA,NA,NA,NA,NA,NA)
+              }
+              #a = anova(fitA)
+              #eta = a[,2]/sum(a[,2],na.rm=T)
               # extract model results for treatment allocation
               treat_coef = coef[nrow(coef),]
               lm_interim_results_list[[k]][i,6:9] <- treat_coef
