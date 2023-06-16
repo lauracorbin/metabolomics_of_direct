@@ -1,6 +1,6 @@
 # This script processes results from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 9th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -113,8 +113,10 @@ for (i in 1:length(lm_results_list)){
   print(paste0("Processing: ",names(lm_results_list)[[i]]))
   # adjust p for multiple testing using holm
   lm_results_list[[i]]$rnt_lm_treat_HolmAdjP <- p.adjust(lm_results_list[[i]]$rnt_lm_treat_p, method=c("holm"))
+  #lm_results_list[[i]]$rnt_lm_treat_HolmAdjp_after_adj_for_weight.change <- p.adjust(lm_results_list[[i]]$rnt_lm_treat_p_after_adj_for_weight.change, method=c("holm"))
   # replace values >1 with =1
   lm_results_list[[i]][which(lm_results_list[[i]]$rnt_lm_treat_HolmAdjP > 1), "rnt_lm_treat_HolmAdjP"] <- 1
+  #lm_results_list[[i]][which(lm_results_list[[i]]$rnt_lm_treat_HolmAdjp_after_adj_for_weight.change > 1), "rnt_lm_treat_HolmAdjp_after_adj_for_weight.change"] <- 1
   
   # flag associated based on BF p<0.05
   lm_results_list[[i]]$rnt_lm_treat_HolmAdjP_flag <- 0
@@ -164,4 +166,5 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
+rm(list=ls())
 

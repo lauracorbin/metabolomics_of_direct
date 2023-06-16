@@ -1,7 +1,7 @@
 # This script runs analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 # both linear model and logistics model (on P/A) included
 
-# last run: 9th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -56,8 +56,8 @@ clean_sample_list <- list(metab=readRDS(file=paste0(processeddata_dir,"OrigScale
 
 # set up list for results output
 lm_results_list <- list(rnt=NA,natlog=NA)
-lm_interim_results_list <- list(metab=as.data.frame(matrix(data = NA, nrow = 1300, ncol = 17)),
-                        nmr=as.data.frame(matrix(data = NA, nrow = 300, ncol = 17)))
+lm_interim_results_list <- list(metab=as.data.frame(matrix(data = NA, nrow = 1300, ncol = 23)),
+                        nmr=as.data.frame(matrix(data = NA, nrow = 300, ncol = 23)))
 
 # set up list for residuals output 
 lm_residuals_list <- list(rnt=NA,natlog=NA)
@@ -106,21 +106,22 @@ for (j in 1:length(datasets_to_run)){
       mtb_b_col_ref <- which( colnames(dtst) == mtb_name_b)
       # subset data to single feature (restrict to those with non-missing)
       mtb <- dtst[which(!is.na(dtst[mtb_e_col_ref]) ),
-                  c("id","treat","site","centre","list.size","age","sex",mtb_name_b,mtb_name_e)]
-      # subset data to those with non-missing basline
-      mtb <- mtb[which(!is.na(mtb[8])),]
+                  c("id","treat","site","centre","list.size","age","sex","weight.change",mtb_name_b,mtb_name_e)]
+      # subset data to those with non-missing baseline
+      mtb <- mtb[which(!is.na(mtb[9])),]
       # record no. of observations
       lm_interim_results_list[[k]][i,2] <- nrow(mtb)
       # count missing baseline
-      lm_interim_results_list[[k]][i,5] <- length(which(is.na(mtb[,8])))
+      lm_interim_results_list[[k]][i,5] <- length(which(is.na(mtb[,9])))
       # count per group
       lm_interim_results_list[[k]][i,4] <- nrow(mtb[mtb$treat == "Intervention",])
       lm_interim_results_list[[k]][i,3] <- nrow(mtb[mtb$treat == "Control",])
-      # replace missing baseline values with mean
-      #mtb[is.na(mtb[,8]),8] <- mean(mtb[,8],na.rm=T)
         # fit model
           fitA <- tryCatch(lm(mtb[,mtb_name_e] ~ age + sex + centre + list.size + mtb[,mtb_name_b] + treat , data=mtb), error = function(e) e )
+          # run model without intervention fitted to extract residuals for PCA later
           fitB <- tryCatch(lm(mtb[,mtb_name_e] ~ age + sex + centre + list.size + mtb[,mtb_name_b] , data=mtb), error = function(e) e )
+          # run model with weight change also fitted to see extent to which treat effect attenuated
+          fitC <- tryCatch(lm(mtb[,mtb_name_e] ~ age + sex + centre + list.size + mtb[,mtb_name_b] + weight.change + treat , data=mtb), error = function(e) e )
           if (class(fitA)[1] == "lm") {
             # extract coefficients
             coef = summary(fitA)$coefficients
@@ -134,13 +135,23 @@ for (j in 1:length(datasets_to_run)){
               } else {
                 eta = c(NA,NA,NA,NA,NA,NA,NA)
               }
-              #a = anova(fitA)
-              #eta = a[,2]/sum(a[,2],na.rm=T)
               # extract model results for treatment allocation
+              coefC = summary(fitC)$coefficients
+              # calculate eta from fitC
+              if ( fitC$df.residual > 0 & (deviance(fitC) > sqrt(.Machine$double.eps)) ) {
+                c = Anova(fitC)
+                etaC = c[,1]/sum(c[,1],na.rm=T)
+              } else {
+              etaC = c(NA,NA,NA,NA,NA,NA,NA)
+              }
               treat_coef = coef[nrow(coef),]
               lm_interim_results_list[[k]][i,6:9] <- treat_coef
               # extract variance explained results
               lm_interim_results_list[[k]][i,10:16] <- eta
+              # extract treatment effect after adjusting for weight change
+              lm_interim_results_list[[k]][i,17:20] <- coefC[nrow(coefC),]
+              lm_interim_results_list[[k]][i,21] <- etaC[length(etaC)-1]
+              lm_interim_results_list[[k]][i,22] <- etaC[length(etaC)-2]
               # extract residuals (without intervention fitted)
               model_resid <- as.data.frame(resid(fitB))
               model_resid$id <- mtb$id
@@ -152,12 +163,12 @@ for (j in 1:length(datasets_to_run)){
               qqline(residuals(fitA), col="red")
               abline(a=0,b=1)
             } else {
-              lm_interim_results_list[[k]][i,17] <- "model failed to run - not all coefficients estimated"
-              lm_interim_results_list[[k]][i,6:16] <- NA
+              lm_interim_results_list[[k]][i,23] <- "model failed to run - not all coefficients estimated"
+              lm_interim_results_list[[k]][i,6:22] <- NA
             }
           } else {
-            lm_interim_results_list[[k]][i,17] <- "model failed to run"
-            lm_interim_results_list[[k]][i,6:16] <- NA
+            lm_interim_results_list[[k]][i,23] <- "model failed to run"
+            lm_interim_results_list[[k]][i,6:22] <- NA
           }
     }
     # name column headers
@@ -172,8 +183,15 @@ for (j in 1:length(datasets_to_run)){
     names(lm_interim_results_list[[k]])[8] <- "lm_treat_t"
     names(lm_interim_results_list[[k]])[9] <- "lm_treat_p"
     names(lm_interim_results_list[[k]])[10:16] <- paste0("lm_eta2_", model_components)
-    names(lm_interim_results_list[[k]])[17] <- "lm_model_fail_info"
-    names(lm_interim_results_list[[k]])[2:17] <- paste0(names(dataset_list)[datasets_to_run[j]], "_", names(lm_interim_results_list[[k]])[2:17])
+    names(lm_interim_results_list[[k]])[17] <- "lm_treat_beta_after_adj_for_weight.change"
+    names(lm_interim_results_list[[k]])[18] <- "lm_treat_SE_after_adj_for_weight.change"
+    names(lm_interim_results_list[[k]])[19] <- "lm_treat_t_after_adj_for_weight.change"
+    names(lm_interim_results_list[[k]])[20] <- "lm_treat_p_after_adj_for_weight.change"
+    names(lm_interim_results_list[[k]])[21] <- "lm_eta2_treat_after_adj_for_weight.change"
+    names(lm_interim_results_list[[k]])[22] <- "lm_eta2_weight.change"
+    
+    names(lm_interim_results_list[[k]])[23] <- "lm_model_fail_info"
+    names(lm_interim_results_list[[k]])[2:23] <- paste0(names(dataset_list)[datasets_to_run[j]], "_", names(lm_interim_results_list[[k]])[2:23])
     # close pdf
     invisible(dev.off())
   }
@@ -414,4 +432,4 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
-
+rm(list=ls())

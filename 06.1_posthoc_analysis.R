@@ -1,6 +1,6 @@
 # This script runs posthoc analyses following the EFFECT OF THE INTERVENTION ON METABOLITES analysis
 
-# last run: 9th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -252,6 +252,16 @@ lm_enrich
 ## look at enrichment of metabolite clusters (i.e. those metabolites in the same cluster) to full dataset
 ## aim is to characterise each cluster
 
+# make empty list to store lists of features in each associated cluster
+cluster_groups <- vector(mode = "list", length=length(unique(clusters$k_group)))
+
+# populate list with feature lists
+for (i in 1:length(unique(clusters$k_group)) ) {
+  #metab_group <- clusters[which(clusters$feature_id == selected_assoc_features[i]),"k_group"]
+  cluster_groups[[i]] <- as.character(clusters[clusters$k_group == i,c("feature_id")])
+  names(cluster_groups)[[i]] <- paste0(i,"_grp")
+}
+
 # make empty list to add enrichment
 clusters_with_enrich <- vector(mode = "list", length=length(cluster_groups))
 
@@ -369,8 +379,8 @@ for (j in 1:length(dataset_list$raw)){
             legend.text = element_text(size=8, colour = "black"),
             legend.position = "bottom") +
       geom_point(position=position_jitterdodge(),aes(col=allocation),size=0.3)
-    p2 <- p1 + geom_text(data=baseline_text,label=paste0("p=",baseline_p),size=3) +
-                geom_text(data=endpoint_text,label=paste0("p=",endpoint_p),size=3)
+    p2 <- p1 + geom_text(data=baseline_text,label=paste0("p=",baseline_p),size=2.5) +
+                geom_text(data=endpoint_text,label=paste0("p=",endpoint_p),size=2.5)
     return(p2)
   })
   if (j==1) {
@@ -402,29 +412,32 @@ for (j in 1:length(dataset_list$raw)){
 
 }
 
+# calculate bonferroni correction N
+n_adjust <- length(nmr_output) + length(metab_output)
+
 print("Number of associated in NMR (linear model):")
 length(nmr_output)
-print("Number associated at baseline (p<0.05/187)")
-length(which(nmr_output <= (0.05/187)))
+print("Number associated at baseline (p<0.05/186)")
+length(which(nmr_output <= (0.05/n_adjust)))
 print("Number associated at baseline (p<0.05)")
 length(which(nmr_output <= (0.05)))
 
 print("Number of associated in Metabolon (linear model):")
 length(metab_output)
-print("Number associated at baseline (p<0.05/187)")
-length(which(metab_output <= (0.05/187)))
+print("Number associated at baseline (p<0.05/186)")
+length(which(metab_output <= (0.05/n_adjust)))
 print("Number associated at baseline (p<0.05)")
 length(which(metab_output <= (0.05)))
 
 ## write plots to PDF
-filename = paste0(results_dir,"Figures\\ForPaper\\FigureS3A_metab_boxplots.pdf")
+filename = paste0(results_dir,"Figures\\ForPaper\\GitHub_Figures_metab_boxplots.pdf")
 outputfig <- ggpubr::ggarrange(plotlist=metab_plots,
                   ncol=2, nrow=3,
                   common.legend = T,
                   legend="top")
 ggpubr::ggexport(outputfig, filename=filename)
 
-filename = paste0(results_dir,"Figures\\ForPaper\\FigureS3B_nmr_boxplots.pdf")
+filename = paste0(results_dir,"Figures\\ForPaper\\GitHub_Figures_nmr_boxplots.pdf")
 outputfig <- ggpubr::ggarrange(plotlist=nmr_plots,
                                ncol=2, nrow=3,
                                common.legend = T,
@@ -433,7 +446,7 @@ ggpubr::ggexport(outputfig, filename=filename)
 
 #############################################################################################
 #############################################################################################
-## Calculate metab change and plot against weight change and remission for associated metabs
+## Calculate metab change 
 #############################################################################################
 #############################################################################################
 
@@ -446,9 +459,9 @@ compids_to_include_b <- paste0(compids_to_include, ".b")
 compids_to_include_all <- c(compids_to_include_e,compids_to_include_b)
 
 # restrict raw data to selected metabs
-metab_features_for_boxplots <- as.data.frame(dataset_list$win$metab[,names(as.data.frame(dataset_list$win$metab)) %in% compids_to_include_all])
+metab_features_for_boxplots <- as.data.frame(dataset_list$raw$metab[,names(as.data.frame(dataset_list$raw$metab)) %in% compids_to_include_all])
 metab_features_for_boxplots$id <- row.names(metab_features_for_boxplots)
-nmr_features_for_boxplots <- as.data.frame(dataset_list$win$nmr[,names(as.data.frame(dataset_list$win$nmr)) %in% compids_to_include_all])
+nmr_features_for_boxplots <- as.data.frame(dataset_list$raw$nmr[,names(as.data.frame(dataset_list$raw$nmr)) %in% compids_to_include_all])
 nmr_features_for_boxplots$id <- row.names(nmr_features_for_boxplots)
 
 features_for_boxplots <- merge(nmr_features_for_boxplots,metab_features_for_boxplots,by="id",all=T)
@@ -465,72 +478,56 @@ for (i in 1:length(compids_to_include)) {
   # calculate delta
   baseline_id <- compids_to_include_b[i]
   endpoint_id <- compids_to_include_e[i]
-  delta_phenos[,i] <- features_for_boxplots[,names(features_for_boxplots) == endpoint_id ] - features_for_boxplots[,names(features_for_boxplots) == baseline_id]
+  baseline_col <- which(names(features_for_boxplots) == baseline_id)
+  baseline_data <- features_for_boxplots[,c(1,baseline_col)]
+  endpoint_col <- which(names(features_for_boxplots) == endpoint_id)
+  endpoint_data <- features_for_boxplots[,c(1,endpoint_col)]
+  baseline_data$time <- "b"
+  endpoint_data$time <-"e"
+  names(baseline_data)[2] <- "metabolite"
+  names(endpoint_data)[2] <- "metabolite"
+  all_data <- rbind(baseline_data,endpoint_data)
+  all_data$rnt_metabolite <- qnorm((rank(all_data$metabolite,na.last="keep",ties.method = "random")-0.5)/sum(!is.na(all_data$metabolite)))
+  baseline_data <- all_data[all_data$time == "b",]
+  endpoint_data <- all_data[all_data$time == "e",]
+  delta_phenos[,i] <- endpoint_data$rnt_metabolite - baseline_data$rnt_metabolite
   delta_phenos[,i+length(compids_to_include)] <- delta_phenos[,i]/sd(delta_phenos[,i],na.rm=T)
 }
 
+
 # add weight change
 delta_phenos$weight.change <- trial_data$weight.change[match(delta_phenos$id,trial_data$id)]
+# add weight change quantiles
+weight_quantiles <- quantile(delta_phenos$weight.change,c(0:4/4))
+weight_quantiles
+delta_phenos$weight.change.quantiles <- with(delta_phenos, cut(weight.change,weight_quantiles,include.lowest=T,
+                                                              labels=c("Q1:\n-31.6 to -9.0kg","Q2:\n-9.0 to -3.8kg","Q3:\n-3.8 to 0.1kg","Q4:\n0.1 to 13.7kg")))
 
 # add remission status 
 delta_phenos$Remission.status <- trial_data$reversal[match(delta_phenos$id,trial_data$id)]
+delta_phenos$Remission.status.lm <- 0
+delta_phenos <- delta_phenos %>% mutate(`Remission.status.lm` = replace(`Remission.status.lm`, `Remission.status` == "Yes",1 ))
+
 
 # check frequencies
-#table(delta_phenos$weight.change.tertiles,delta_phenos$Remission.status)
+#table(delta_phenos$weight.change.quantiles,delta_phenos$Remission.status)
 
 # add group/class
 delta_phenos$Allocation <- trial_data$treat[match(delta_phenos$id,trial_data$id)]
 
-# stat smooth plots
-metabolite_stat_plots = lapply(compids_to_include, function(feature){
-  metab <- delta_phenos[,c(feature, "weight.change", "Remission.status")]
-  metab_id <- names(metab[1])
-  ylabel <- "Change in metabolite"
-  if (identical(grep("compid",feature), integer(0)) == TRUE){
-    metab_name <- nmr_classes[which(nmr_classes$feature_id == metab_id),"biochemical"]
-  }
-  else {
-    metab_name <- metab_classes[which(metab_classes$feature_id == metab_id),"biochemical"]
-  }
-  names(metab)[1] <- "metabolite"
-  # plot
-  p1 <- ggplot(metab, aes(x=weight.change,y=metabolite,color=Remission.status)) +
-    geom_point(size = 0.3) +
-    stat_smooth(aes(fill = Remission.status, color = Remission.status), method = "lm") +
-    labs(x="Weight change (kg)", y=ylabel, fill="Remission.status", title=metab_name) +
-    theme(axis.text = element_text(size=8, colour = "black"),
-          axis.title = element_text(size=8, colour = "black"),
-          plot.title = element_text(size=8, colour = "black"),
-          legend.title = element_text(size=8, colour = "black"),
-          legend.text = element_text(size=8, colour = "black"),
-          legend.position = "bottom")
-  return(p1)
-})
-  
-## write plots to PDF
-filename = paste0(results_dir,"Figures\\ForPaper\\FigureS5_metab_statplots.pdf")
-outputfig <- ggpubr::ggarrange(plotlist=metabolite_stat_plots,
-                               ncol=2, nrow=2,
-                               common.legend = T,
-                               legend="top")
-ggpubr::ggexport(outputfig, filename=filename)
 
-filename = paste0(results_dir,"Figures\\ForPaper\\Figure2_metab_statplots.pdf")
-outputfig <- ggpubr::ggarrange(plotlist=metabolite_stat_plots[c(148,76, 1,4)],
-                               ncol=2, nrow=2,
-                               common.legend = T,
-                               legend="top")
-ggpubr::ggexport(outputfig, filename=filename)
-  
+#############################################################################################
+#############################################################################################
+## ttest of metabolite change within weight quantiles
+#############################################################################################
+#############################################################################################
 
-# linear model including weight change and remission and interaction
 # set up results dataframe
-lm_results <- as.data.frame(matrix(data = NA, nrow = length(compids_to_include), ncol = 20))
+tt_results <- as.data.frame(matrix(data = NA, nrow = length(compids_to_include), ncol = 11))
 
 for (i in 1:length(compids_to_include)){
   metab_id <- compids_to_include[i]
-  metab <- delta_phenos[,c(metab_id, "weight.change", "Remission.status")]
-  #metab_id <- names(metab[1])
+  metab <- delta_phenos[,c(metab_id,"weight.change.quantiles", "Remission.status","weight.change")]
   if (identical(grep("compid",compids_to_include[i]), integer(0)) == TRUE){
     metab_name <- nmr_classes[which(nmr_classes$feature_id == metab_id),"biochemical"]
   }
@@ -538,52 +535,123 @@ for (i in 1:length(compids_to_include)){
     metab_name <- metab_classes[which(metab_classes$feature_id == metab_id),"biochemical"]
   }
   names(metab)[1] <- "metabolite"
-  fitA <- lm(metab$metabolite ~ metab$weight.change * metab$Remission.status)
+  # separate Q2 and Q2
+  q1data <- metab[metab$weight.change.quantiles == "Q1:\n-31.6 to -9.0kg",]
+  q2data <- metab[metab$weight.change.quantiles == "Q2:\n-9.0 to -3.8kg",]
+  # run ttest
+  t.test(q1data$metabolite ~ q1data$Remission.status,var.equal=F)
+  t.test(q2data$metabolite ~ q2data$Remission.status,var.equal=F)
+  # check correlation between weight change and metabolite change
+  cor.test(q1data$metabolite, q1data$weight.change)
+  cor.test(q2data$metabolite, q2data$weight.change)
   # put results in dataframe
-  lm_results[i,1] <- metab_name
-  lm_results[i,2] <- length(which(!is.na(metab$metabolite)))
-  #weigth change coef
-  lm_results[i,3:4] <- summary(fitA)$coef[2,1:2]
-  lm_results[i,5] <- lm_results[i,3] - (lm_results[i,4] * 1.96)
-  lm_results[i,6] <- lm_results[i,3] + (lm_results[i,4] * 1.96)
-  lm_results[i,7:8] <- summary(fitA)$coef[2,3:4]
-  # remission coef
-  lm_results[i,9:10] <- summary(fitA)$coef[3,1:2]
-  lm_results[i,11] <- lm_results[i,9] - (lm_results[i,10] * 1.96)
-  lm_results[i,12] <- lm_results[i,9] + (lm_results[i,10] * 1.96)
-  lm_results[i,13:14] <- summary(fitA)$coef[3,3:4]
-  # interaction coef
-  lm_results[i,15:16] <- summary(fitA)$coef[4,1:2]
-  lm_results[i,17] <- lm_results[i,15] - (lm_results[i,16] * 1.96)
-  lm_results[i,18] <- lm_results[i,15] + (lm_results[i,16] * 1.96)
-  lm_results[i,19:20] <- summary(fitA)$coef[4,3:4]  
+  tt_results[i,1] <- metab_name
+  tt_results[i,2] <- t.test(q1data$metabolite ~ q1data$Remission.status,var.equal=F)[3]
+  tt_results[i,3] <- cor.test(q1data$metabolite, q1data$weight.change)[[4]]
+  tt_results[i,4] <- cor.test(q1data$metabolite, q1data$weight.change)[[9]][1]
+  tt_results[i,5] <- cor.test(q1data$metabolite, q1data$weight.change)[[9]][2]
+  tt_results[i,6] <- cor.test(q1data$metabolite, q1data$weight.change)[[3]]
+  tt_results[i,7] <- t.test(q2data$metabolite ~ q2data$Remission.status,var.equal=F)[3]
+  tt_results[i,8] <- cor.test(q2data$metabolite, q2data$weight.change)[[4]]
+  tt_results[i,9] <- cor.test(q2data$metabolite, q2data$weight.change)[[9]][1]
+  tt_results[i,10] <- cor.test(q2data$metabolite, q2data$weight.change)[[9]][2]
+  tt_results[i,11] <- cor.test(q2data$metabolite, q2data$weight.change)[[3]]
+  if (metab_name == "1,5-anhydroglucitol (1,5-AG)" | metab_name == "fructose" | metab_name == "mannose" | metab_name == "glucose" ) {
+    print(metab_name)
+    print(summary(glm(q1data$Remission.status ~ q1data$weight.change + q1data$metabolite,family = "binomial")))
+    }
 }
-names(lm_results)[1] <- "Biochemical.name"
-names(lm_results)[2] <- "N.samples.in.model"
-names(lm_results)[3] <- "Weight.change.beta"
-names(lm_results)[4] <- "Weight.change.SE"
-names(lm_results)[5] <- "Weight.change.lower.95CI"
-names(lm_results)[6] <- "Weight.change.upper.95CI"
-names(lm_results)[7] <- "Weight.change.tstat"
-names(lm_results)[8] <- "Weight.change.p"
+names(tt_results)[1] <- "Biochemical.name"
+names(tt_results)[2] <- "Q1.weight.change_ttest_p"
+names(tt_results)[3] <- "Q1.weight.change_cortest_r"
+names(tt_results)[4] <- "Q1.weight.change_cortest_r_lci"
+names(tt_results)[5] <- "Q1.weight.change_cortest_r_uci"
+names(tt_results)[6] <- "Q1.weight.change_cortest_p"
+names(tt_results)[7] <- "Q2.weight.change_ttest_p"
+names(tt_results)[8] <- "Q2.weight.change_cortest_r"
+names(tt_results)[9] <- "Q2.weight.change_cortest_r_lci"
+names(tt_results)[10] <- "Q2.weight.change_cortest_r_uci"
+names(tt_results)[11] <- "Q2.weight.change_cortest_p"
 
-names(lm_results)[9] <- "Remission.status.beta"
-names(lm_results)[10] <- "Remission.status.SE"
-names(lm_results)[11] <- "Remission.status.lower.95CI"
-names(lm_results)[12] <- "Remission.status.upper.95CI"
-names(lm_results)[13] <- "Remission.status.tstat"
-names(lm_results)[14] <- "Remission.status.p"
+# add source info
+tt_results$Source.platform <- class_info$panel[match(lm_results$Biochemical.name,class_info$biochemical)]
 
-names(lm_results)[15] <- "Interaction.beta"
-names(lm_results)[16] <- "Interaction.SE"
-names(lm_results)[17] <- "Interaction.lower.95CI"
-names(lm_results)[18] <- "Interaction.upper.95CI"
-names(lm_results)[19] <- "Interaction.tstat"
-names(lm_results)[20] <- "Interaction.p"
+# save out
+filename <- paste0(results_dir,"Tables\\TableS4_weight_and_metabolite_on_remission.txt")
+write.table(tt_results,file=filename,sep="\t",row.names=F,quote=F)
 
-# save out 
-filename <- paste0(results_dir,"Tables\\TableS6_weight_and_remission.txt")
-write.table(lm_results,file=filename,sep="\t",row.names=F,quote=F)
+#############################################################################################
+#############################################################################################
+## plots of remission on metabolite change and weight change to show interactions
+#############################################################################################
+#############################################################################################
+
+# list of metabolites to include
+metabs_to_include <- c("glucose","1,5-anhydroglucitol (1,5-AG)","fructose","mannose")
+
+# extract comp ids
+compids_to_include <- class_info[class_info$biochemical %in% metabs_to_include,c("feature_id")]
+
+# find columns to extract 
+extract_cols <- c("id", "weight.change", "Remission.status", "Remission.status.lm", "Allocation", "weight.change.quantiles")
+extract_cols <- c(extract_cols, compids_to_include)
+delta_pheno_cols <- which(names(delta_phenos) %in% extract_cols)
+delta_pheno_selected <- delta_phenos[,delta_pheno_cols]
+
+# boxplots by remission and weight change
+metabolite_plots_by_weight = lapply(compids_to_include, function(feature){
+  metab <- delta_pheno_selected[,c(feature, "weight.change.quantiles", "Remission.status")]
+  metab_id <- names(metab[1])
+  metab_name <- metab_classes[which(metab_classes$feature_id == metab_id),"biochemical"]
+  
+  names(metab)[1] <- "metabolite"
+  p <- ggboxplot(metab,x="weight.change.quantiles",y="metabolite",
+               color="Remission.status",
+               add="jitter",font.label=list(size=4),
+               ylab = "Change in metabolite\n(normalised SD units)", xlab="Weight change quantiles", title="",
+               palette = gray.colors(n=2, start=0,end=0.5)) + 
+        theme(legend.position = "none")
+  p1 <- p + stat_compare_means(aes(group=Remission.status),method="t.test",label="p.format",method.args = list(var.equal=F)) +
+            scale_y_continuous(limits = c(-4,4), expand = expansion(mult = c(0.05,0.15)))
+  return(p1)
+})
+
+
+# write out as pdf
+filename1 = paste0(results_dir,"Figures\\ForPaper\\Figure2a_metab_boxplots_by_weight.pdf")
+pdf(filename1)
+metabolite_plots_by_weight[1]
+invisible(dev.off())
+filename2 = paste0(results_dir,"Figures\\ForPaper\\Figure2b_metab_boxplots_by_weight.pdf")
+pdf(filename2)
+metabolite_plots_by_weight[2]
+invisible(dev.off())
+filename3 = paste0(results_dir,"Figures\\ForPaper\\Figure2c_metab_boxplots_by_weight.pdf")
+pdf(filename3)
+metabolite_plots_by_weight[3]
+invisible(dev.off())
+filename4 = paste0(results_dir,"Figures\\ForPaper\\Figure2d_metab_boxplots_by_weight.pdf")
+pdf(filename4)
+metabolite_plots_by_weight[4]
+invisible(dev.off())
+
+# write out as postscript
+filename1 = paste0(results_dir,"Figures\\ForPaper\\Figure2a_metab_boxplots_by_weight.eps")
+postscript(filename1)
+metabolite_plots_by_weight[1]
+invisible(dev.off())
+filename2 = paste0(results_dir,"Figures\\ForPaper\\Figure2b_metab_boxplots_by_weight.eps")
+postscript(filename2)
+metabolite_plots_by_weight[2]
+invisible(dev.off())
+filename3 = paste0(results_dir,"Figures\\ForPaper\\Figure2c_metab_boxplots_by_weight.eps")
+postscript(filename3)
+metabolite_plots_by_weight[3]
+invisible(dev.off())
+filename4 = paste0(results_dir,"Figures\\ForPaper\\Figure2d_metab_boxplots_by_weight.eps")
+postscript(filename4)
+metabolite_plots_by_weight[4]
+invisible(dev.off())
 
 ##################
 ## QUIT SESSION ##
@@ -596,3 +664,4 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
+rm(list=ls())

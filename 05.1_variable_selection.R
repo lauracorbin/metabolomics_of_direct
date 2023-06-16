@@ -1,6 +1,6 @@
 # This script runs analyses to extract a subset of representative metabolites based on correlative structure
 
-# last run: 9th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -327,5 +327,5 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
-
+rm(list=ls())
 

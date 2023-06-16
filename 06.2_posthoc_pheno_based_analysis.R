@@ -1,6 +1,6 @@
 # This script runs posthoc analyses using trial phenos following the EFFECT OF THE INTERVENTION ON METABOLITES analysis
 
-# last run: 9th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -211,16 +211,16 @@ summary(abs(cor_output_nafld$cor))
 
 ####################################################################################
 ####################################################################################
-## explore relationship between PCs and selected trial vars for Figure S8 & 9
+## explore relationship between PCs and selected trial vars for Figure S5 & 6
 ####################################################################################
 ####################################################################################
 
 #NB This function currently only works for npcs=2 because of selection step that reduces pheno to those that are meaningfully correlated with the PCs
 corbin_biplot_for_ppca(PCA=pca_model, dataframe_of_phenotypes=checklist_change_data, pheno_list=checklist_change_var, class_info = class_info,
-                       npcs = 2, annot_data = annot_data, ordered_id = ordered_id, filename="FigureS8A_checklist_change")
+                       npcs = 2, annot_data = annot_data, ordered_id = ordered_id, filename="FigureS5A_checklist_change")
 
 corbin_biplot_for_ppca(PCA=pca_model, dataframe_of_phenotypes=nafld_change_data, pheno_list=nafld_change_var, class_info = class_info, 
-                       npcs = 2, annot_data = annot_data, ordered_id = ordered_id, filename="FigureS8B_nafld_change")
+                       npcs = 2, annot_data = annot_data, ordered_id = ordered_id, filename="FigureS5B_nafld_change")
 
 # for interactive testing of biplot function only
 #PCA=pca_model; dataframe_of_phenotypes=nafld_change_data; pheno_list=nafld_change_var; class_info = class_info
@@ -228,11 +228,11 @@ corbin_biplot_for_ppca(PCA=pca_model, dataframe_of_phenotypes=nafld_change_data,
 #pc_x = 1; pc_y = 2
 ####################################################################################
 ####################################################################################
-## plot eigenvalues for Figure S6
+## plot eigenvalues for Figure S4
 ####################################################################################
 ####################################################################################
 
-filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS6_scree.pdf")
+filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS4_scree.pdf")
 pdf(filename)
 plot(ev$values, main="", xlab = "Principal component", ylab = "Eigenvalue", pch = 4, col="black", frame.plot=F)
 invisible(dev.off())
@@ -336,3 +336,4 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
+rm(list=ls())

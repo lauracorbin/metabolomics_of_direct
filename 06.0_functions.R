@@ -93,7 +93,7 @@ corbin_biplot_for_ppca = function(PCA, dataframe_of_phenotypes, pheno_list, npcs
           theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
           geom_hline(yintercept = 0, linetype="dashed", colour="black") +
           geom_vline(xintercept = 0, linetype="dashed", colour="black") +
-          geom_text_repel(aes(label=ifelse(ToLabel == 1,as.character(biochemical),'')),hjust=1,vjust=0.5,cex=2.5) +
+          geom_text_repel(aes(label=ifelse(ToLabel == 1,as.character(biochemical),'')),hjust=1,vjust=0.5,cex=3.0) +
           labs(x = "PC1",y="PC2")
         print(plotout)
         invisible(dev.off())
@@ -196,10 +196,10 @@ corbin_biplot_for_ppca = function(PCA, dataframe_of_phenotypes, pheno_list, npcs
         # define shape var
         mydata$subgroup_v1 <- paste0(mydata$treat,"_",mydata$reversal)
         mydata$subgroup <- NA
-        mydata[which(mydata$subgroup_v1 == "Control_No"),c("subgroup")] <- "Control, no remission"
-        mydata[which(mydata$subgroup_v1 == "Control_Yes"),c("subgroup")] <- "Control, remission"
-        mydata[which(mydata$subgroup_v1 == "Intervention_No"),c("subgroup")] <- "Intervention, no remission"
-        mydata[which(mydata$subgroup_v1 == "Intervention_Yes"),c("subgroup")] <- "Intervention, remission"
+        mydata[which(mydata$subgroup_v1 == "Control_No"),c("subgroup")] <- "Control,\nno remission"
+        mydata[which(mydata$subgroup_v1 == "Control_Yes"),c("subgroup")] <- "Control,\nremission"
+        mydata[which(mydata$subgroup_v1 == "Intervention_No"),c("subgroup")] <- "Intervention,\nno remission"
+        mydata[which(mydata$subgroup_v1 == "Intervention_Yes"),c("subgroup")] <- "Intervention,\nremission"
         
         ### GGPLOT with labels
         graphfile <- paste0(results_dir,"Figures\\",filename,"_biplot_",pc_x,"_",pc_y)
@@ -213,10 +213,11 @@ corbin_biplot_for_ppca = function(PCA, dataframe_of_phenotypes, pheno_list, npcs
           geom_segment(data = df.v, aes(x = 0, y = 0, xend = xvar, yend = yvar),
                        arrow = arrow(length = unit(1/2, "picas")),
                        size = 1, color = "grey50") +
-          scale_shape_manual(values=c(1,16,2,17),name="Subgroup (allocation, remission status)") +
+          scale_shape_manual(values=c(1,16,2,17),name="Subgroup\n(allocation, remission status)") +
           scale_color_gradient(low="blue",high="red",name="Weight change (kg)") +
           theme_bw() +
-          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                legend.position = "bottom",legend.box = "vertical") +
           geom_hline(yintercept = 0, linetype="dashed", colour="black") +
           geom_vline(xintercept = 0, linetype="dashed", colour="black") +
           labs(x = paste0("PC",pc_x,";  variance explained = ", signif(varexp[1,pc_x], d = 2) ),
@@ -236,10 +237,11 @@ corbin_biplot_for_ppca = function(PCA, dataframe_of_phenotypes, pheno_list, npcs
           geom_segment(data = df.v, aes(x = 0, y = 0, xend = xvar, yend = yvar),
                        arrow = arrow(length = unit(1/2, "picas")),
                        size = 1, color = "grey50") +
-          scale_shape_manual(values=c(1,16,2,17),name="Subgroup (allocation, remission status)") +
+          scale_shape_manual(values=c(1,16,2,17),name="Subgroup (allocation,\nremission status)") +
           scale_color_gradient(low="blue",high="red",name="Weight change (kg)") +
           theme_bw() +
-          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+          theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+                legend.position = "bottom",legend.box = "vertical") +
           geom_hline(yintercept = 0, linetype="dashed", colour="black") +
           geom_vline(xintercept = 0, linetype="dashed", colour="black") +
           labs(x = paste0("PC",pc_x,";  variance explained = ", signif(varexp[1,pc_x], d = 2) ),

@@ -1,6 +1,6 @@
 # This script makes results tables from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 11th Nov 2022
+# last run: 13th June 2023
 
 ####################################################################################
 ####################################################################################
@@ -115,7 +115,7 @@ table(control_summary$sex)
 
 
 ####################################################################################
-## Table S4 - class specifications for enrichment analyis plus cluster membership
+## Table S5 - class specifications for enrichment analyis plus cluster membership
 ####################################################################################
 
 # generate copy to edit
@@ -134,7 +134,8 @@ new_class_info <- new_class_info[,c(1,4,5,2,3,6)]
 new_class_info$cluster.group <- clusters$k_group[match(new_class_info$Feature_ID,clusters$feature_id)]
 
 # write out 
-write.table(new_class_info[,-c(1)],file=paste0(results_dir,"Tables\\TableS4_class_and_cluster_info.txt"),row.names=F,sep="\t")
+write.table(new_class_info[,-c(1)],file=paste0(results_dir,"Tables\\TableS5_class_and_cluster_info.txt"),row.names=F,sep="\t")
+
 
 ####################################################################################
 ## Table S2 & S3 - NMR and Metabolon linear model full results
@@ -179,9 +180,11 @@ for (i in 1:length(lm_results_list)) {
   print(paste0("No. of associated features that are selected for follow up based on clustering analysis:"))
   print(table(lm_results_tables[[i]]$rnt_lm_treat_HolmAdjP_flag,lm_results_tables[[i]]$representative_feature))
   
-  # add in 95% CI for rnt beta
+  # add in 95% CI for rnt betas
   lm_results_tables[[i]]$rnt_lm_treat_beta_lci <- lm_results_tables[[i]]$rnt_lm_treat_beta - (lm_results_tables[[i]]$rnt_lm_treat_SE * 1.96)
   lm_results_tables[[i]]$rnt_lm_treat_beta_uci <- lm_results_tables[[i]]$rnt_lm_treat_beta + (lm_results_tables[[i]]$rnt_lm_treat_SE * 1.96)
+  lm_results_tables[[i]]$rnt_lm_treat_beta_lci_after_adj_for_weight.change <- lm_results_tables[[i]]$rnt_lm_treat_beta_after_adj_for_weight.change - (lm_results_tables[[i]]$rnt_lm_treat_SE_after_adj_for_weight.change * 1.96)
+  lm_results_tables[[i]]$rnt_lm_treat_beta_uci_after_adj_for_weight.change <- lm_results_tables[[i]]$rnt_lm_treat_beta_after_adj_for_weight.change + (lm_results_tables[[i]]$rnt_lm_treat_SE_after_adj_for_weight.change * 1.96)
   
   # sort by p
   lm_results_tables[[i]] <- lm_results_tables[[i]][order(lm_results_tables[[i]]$rnt_lm_treat_p_rank),]
@@ -189,16 +192,14 @@ for (i in 1:length(lm_results_list)) {
   # drop feature id
   lm_results_tables[[i]] <- lm_results_tables[[i]][,!grepl("feature_id",names(lm_results_tables[[i]]))] 
   
-  # format p values to scientific notation
+  # no. of associated features after weight adj
+  print(paste0("No. of associated features from weight adjusted model after Holm correction: ", length(which(lm_results_tables[[i]]$rnt_lm_treat_HolmAdjp_after_adj_for_weight.change < 0.05 ))))
+  
+  # format (small) p values to scientific notation
   lm_results_tables[[i]][,c("rnt_lm_treat_p")] <- format(lm_results_tables[[i]][,c("rnt_lm_treat_p")],format="e",digits=3)
-  lm_results_tables[[i]][,c("rnt_lm_treat_p")] <- format(lm_results_tables[[i]][,c("rnt_lm_treat_p")],format="e",digits=3)
+  lm_results_tables[[i]][,c("rnt_lm_treat_p_after_adj_for_weight.change")] <- format(lm_results_tables[[i]][,c("rnt_lm_treat_p_after_adj_for_weight.change")],format="e",digits=3)
   lm_results_tables[[i]][,c("rnt_lm_treat_HolmAdjP")] <- format(lm_results_tables[[i]][,c("rnt_lm_treat_HolmAdjP")],format="e",digits=3)
-
-  # limit numeric cols to 2dp
-  num_cols <- which(unlist(lapply(lm_results_tables[[i]], is.numeric)))
-  for (j in 1:length(num_cols)){
-    lm_results_tables[[i]][,num_cols[j]] <- round(lm_results_tables[[i]][,num_cols[j]],2)
-  }
+  #lm_results_tables[[i]][,c("rnt_lm_treat_HolmAdjp_after_adj_for_weight.change")] <- format(lm_results_tables[[i]][,c("rnt_lm_treat_HolmAdjp_after_adj_for_weight.change")],format="e",digits=3)
   
   if (i==1){
     # add panel
@@ -223,16 +224,50 @@ for (i in 1:length(lm_results_list)) {
   # replace eta2 with VarExp
   names(lm_results_tables[[i]]) <- gsub(x=names(lm_results_tables[[i]]),pattern="eta2",replacement = "VarExp")
   
+  # calculate change in variance explained after weight adjustment
+  lm_results_tables[[i]]$Percent.change.in.VE.by.allocation.after.weight.adj <- 
+    100*((lm_results_tables[[i]]$rnt_lm_VarExp_treat_after_adj_for_weight.change - lm_results_tables[[i]]$rnt_lm_VarExp_treat)/lm_results_tables[[i]]$rnt_lm_VarExp_treat)
+
+  ## set weight adj results to NA if metabolite not associated in primary model
+  # find weight adj columns
+  weightadj.cols <- which(grepl("weight.",names(lm_results_tables[[i]])))
+  # set to NA
+  # set col to use as flag
+  flag_col <- which(names(lm_results_tables[[i]]) == "rnt_lm_treat_HolmAdjP_flag")
+  
+  for (m in 1:nrow(lm_results_tables[[i]])){
+    if (lm_results_tables[[i]][m,flag_col] == 0) {
+      lm_results_tables[[i]][m,weightadj.cols] <- NA
+    }
+  }
+  
+  # post weight adjustment summary
+  print("Number of associated metabolites for which allocation VE decreases (or is unchanged) after adjusting for weight change:")
+  print(length(which(lm_results_tables[[i]]$rnt_lm_VarExp_treat >= lm_results_tables[[i]]$rnt_lm_VarExp_treat_after_adj_for_weight.change)))
+  print("Number of associated metabolites for which allocation VE increases after adjusting for weight change:")
+  print(length(which(lm_results_tables[[i]]$rnt_lm_VarExp_treat < lm_results_tables[[i]]$rnt_lm_VarExp_treat_after_adj_for_weight.change)))
+  
+  print("Number of associated metabolites for which allocation VE is greater than or equal to weight change VE:")
+  print(length(which(lm_results_tables[[i]]$rnt_lm_VarExp_treat_after_adj_for_weight.change >= lm_results_tables[[i]]$rnt_lm_VarExp_weight.change)))
+  print("Number of associated metabolites for which allocation VE is less than weight change VE:")
+  print(length(which(lm_results_tables[[i]]$rnt_lm_VarExp_treat_after_adj_for_weight.change < lm_results_tables[[i]]$rnt_lm_VarExp_weight.change)))
+  
+  # limit numeric cols to 3dp
+  num_cols <- which(unlist(lapply(lm_results_tables[[i]], is.numeric)))
+  for (j in 1:length(num_cols)){
+    lm_results_tables[[i]][,num_cols[j]] <- round(lm_results_tables[[i]][,num_cols[j]],3)
+  }
+  
   # check column names
   print(names(lm_results_tables[[i]]))
     
   # reorder
   if (i==1){
-    lm_results_tables[[i]] <-  lm_results_tables[[i]][,c(1,47,48,2:8,49,50,22:24,45,46,25:44)]
+    lm_results_tables[[i]] <-  lm_results_tables[[i]][,c(1,55,56,2:8,57,58,22:24,51,52,25:35,53,54,36:39,59,40:50)]
   } else {
-    lm_results_tables[[i]] <-  lm_results_tables[[i]][,c(1,41,2,42,43,44,16:18,39,40,19:38)]
+    lm_results_tables[[i]] <-  lm_results_tables[[i]][,c(1,49,2,50,51,52,16:18,45,46,19:29,47,48,30:33,53,34:44)]
   }
- 
+  
   ## extract some summary info for text
   assoc_subset <- lm_results_tables[[i]][lm_results_tables[[i]]$rnt_lm_treat_HolmAdjP_flag == 1,]
   
@@ -257,8 +292,8 @@ for (i in 1:length(lm_results_list)) {
   print("The number of metabolites with missingness less than 10% (ie more samples than this) is: ")
   print(nrow(lm_results_tables[[i]][lm_results_tables[[i]]$rnt_lm_n_samples_in_model > thresh,]))
   # for NMR only, add print statement re. no. of associated that are derived
-  print(paste0("No. of associated features classed as derived: ", nrow(assoc_subset[assoc_subset$fullname %in% derived_measures$fullname,]) ))
-  print(paste0("No. of associated features classed as raw: ", nrow(assoc_subset[assoc_subset$fullname %in% raw_measures$fullname,]) ))
+  print(paste0("No. of associated features classed as derived (NMR): ", nrow(assoc_subset[assoc_subset$fullname %in% derived_measures$fullname,]) ))
+  print(paste0("No. of associated features classed as raw (NMR): ", nrow(assoc_subset[assoc_subset$fullname %in% raw_measures$fullname,]) ))
 }
 
 # save out required var
@@ -269,6 +304,8 @@ lm_results_tables$nmr$shortname <- nmr_feature_metadata$shortname[match(lm_resul
 names(lm_results_tables$nmr) <- c("Biochemical.name","Source.platform","Units.of.measurement","Cluster.group","Super.pathway","Sub.pathway",
                                   "N.samples.in.model","Allocation.beta","Allocation.SE","Allocation.lower.95CI","Allocation.upper.95CI","Allocation.tstat","Allocation.p",
                                   "VE.age","VE.sex","VE.centre","VE.list.size","VE.metab.at.baseline","VE.allocation","VE.residuals",
+                                  "Allocation.beta.with.weight.adj","Allocation.SE.with.weight.adj","Allocation.lower.95CI.with.weight.adj","Allocation.upper.95CI.with.weight.adj",
+                                  "Allocation.t.with.weight.adj","Allocation.p.with.weight.adj","Allocation.VE.with.weight.adj","VE.weight.change","Percent.change.in.VE.by.allocation.after.weight.adj",
                                   "N.samples.in.FC.analysis","N.controls.in.FC.analysis","N.intervention.in.FC.analysis","Median.in.controls","Median.in.intervention",
                                   "FC.of.median.intervention.over.control","log2.FC.of.median","Allocation.p.Holm.adj","Allocation.assoc.flag","Allocation.p.rank",
                                   "Representative.feature.?","shortname")
@@ -278,18 +315,57 @@ write.table(lm_results_tables$nmr[,c(1,ncol(lm_results_tables$nmr),2:(ncol(lm_re
 
 # convert to reader friendly variable names
 names(lm_results_tables$metab)
-# add chem id
+# add chem ids
 lm_results_tables$metab$Metabolon.chem.id <- metab_feature_metadata$chemical.id[match(lm_results_tables$metab$biochemical,metab_feature_metadata$biochemical)]
 names(lm_results_tables$metab) <- c("Biochemical.name","Source.platform","Cluster.group","Assay.run","Retention.index","Metabolite.mass",
                                     "CAS.number","Pubchem.id","Kegg.id","HMDB.id","Super.pathway","Sub.pathway",
                                   "N.samples.in.model","Allocation.beta","Allocation.SE","Allocation.lower.95CI","Allocation.upper.95CI","Allocation.tstat","Allocation.p",
                                   "VE.age","VE.sex","VE.centre","VE.list.size","VE.metab.at.baseline","VE.allocation","VE.residuals",
+                                  "Allocation.beta.with.weight.adj","Allocation.SE.with.weight.adj","Allocation.lower.95CI.with.weight.adj","Allocation.upper.95CI.with.weight.adj",
+                                  "Allocation.t.with.weight.adj","Allocation.p.with.weight.adj","Allocation.VE.with.weight.adj","VE.weight.change","Percent.change.in.VE.by.allocation.after.weight.adj",
                                   "N.samples.in.FC.analysis","N.controls.in.FC.analysis","N.intervention.in.FC.analysis","Median.in.controls","Median.in.intervention",
                                   "FC.of.median.intervention.over.control","log2.FC.of.median","Allocation.p.Holm.adj","Allocation.assoc.flag","Allocation.p.rank",
                                   "Representative.feature.?","Metabolon.chem.id")
 filename <- paste0(results_dir,"Tables\\TableS3_metab_lm_results.txt")
 write.table(lm_results_tables$metab[,c(1,ncol(lm_results_tables$metab),2:(ncol(lm_results_tables$metab)-1))],file=filename,sep="\t",row.names=F,quote=F)
 
+####################################################################################
+## Run some summaries of weight adjusted analysis results (in lm_results)
+####################################################################################
+
+# How many metabolites had reduced VE by allocation when weight change added?
+n_reduced <- length(which(lm_results_tables$nmr$Percent.change.in.VE.by.allocation.after.weight.adj < 0 & lm_results_tables$nmr$Allocation.assoc.flag == 1))
+n_total <- length(which( lm_results_tables$nmr$Allocation.assoc.flag == 1))
+print("Percent of associated NMR metabolites that saw a reduction in VE by allocation after weight change fitted:")
+100*(n_reduced/n_total)
+n_reduced
+n_total
+
+n_reduced <- length(which(lm_results_tables$metab$Percent.change.in.VE.by.allocation.after.weight.adj < 0 & lm_results_tables$metab$Allocation.assoc.flag == 1))
+n_total <- length(which( lm_results_tables$metab$Allocation.assoc.flag == 1))
+print("Percent of associated MS metabolites that saw a reduction in VE by allocation after weight change fitted:")
+100*(n_reduced/n_total)
+n_reduced
+n_total
+
+# How many metabolites had greater VE by allocation than weight change?
+lm_results_tables$nmr$VE_diff <- lm_results_tables$nmr$Allocation.VE.with.weight.adj - lm_results_tables$nmr$VE.weight.change
+summary(lm_results_tables$nmr$VE_diff)
+n_win <- length(which(lm_results_tables$nmr$VE_diff >= 0 & lm_results_tables$nmr$Allocation.assoc.flag == 1))
+n_total <- length(which(lm_results_tables$nmr$Allocation.assoc.flag == 1))
+print("Percent of associated NMR metabolites that had greater VE by allocation than weight change:")
+100*(n_win/n_total)
+n_win
+n_total
+
+lm_results_tables$metab$VE_diff <- lm_results_tables$metab$Allocation.VE.with.weight.adj - lm_results_tables$metab$VE.weight.change
+summary(lm_results_tables$metab$VE_diff)
+n_win <- length(which(lm_results_tables$metab$VE_diff >= 0 & lm_results_tables$metab$Allocation.assoc.flag == 1))
+n_total <- length(which(lm_results_tables$metab$Allocation.assoc.flag == 1))
+print("Percent of associated MS metabolites that had greater VE by allocation than weight change:")
+100*(n_win/n_total)
+n_win
+n_total
 
 ####################################################################################
 ## Table S9 - Metabolon PA full results
@@ -362,7 +438,7 @@ filename <- paste0(results_dir,"Tables\\TableS9_metab_pa_results.txt")
 write.table(metab_pa_output_to_export,file=filename,sep="\t",row.names=F,quote=F)
 
 ###################################################################################
-## Table S5 - associated representative from LM
+## Table S6 - associated representative from LM
 ####################################################################################
 
 ## metabolon ##
@@ -374,7 +450,7 @@ main_metab_assoc <- main_metab_assoc[main_metab_assoc$Allocation.assoc.flag == 1
 
 # restrict to relevant results columns
 main_metab_assoc <- main_metab_assoc[,c("Source.platform", "Biochemical.name", "Super.pathway", "Sub.pathway","Cluster.group", "Allocation.beta", "Allocation.lower.95CI", 
-                                        "Allocation.upper.95CI","Allocation.p.Holm.adj")]
+                                        "Allocation.upper.95CI","Allocation.p.Holm.adj","Percent.change.in.VE.by.allocation.after.weight.adj")]
 
 # add info re. enrichment/clustering
 main_metab_assoc$No.in.cluster <- k_group_summary$n_features_in_group[match(main_metab_assoc$Cluster.group,k_group_summary$k_group)]
@@ -389,7 +465,7 @@ main_nmr_assoc <- lm_results_tables$nmr
 # restrict to representative and associated
 main_nmr_assoc <- main_nmr_assoc[main_nmr_assoc$Allocation.assoc.flag == 1 & main_nmr_assoc$`Representative.feature.?` == "Yes",]
 main_nmr_assoc <- main_nmr_assoc[,c("Source.platform", "Biochemical.name", "Super.pathway", "Sub.pathway","Cluster.group", "Allocation.beta", "Allocation.lower.95CI", 
-                                    "Allocation.upper.95CI","Allocation.p.Holm.adj")]
+                                    "Allocation.upper.95CI","Allocation.p.Holm.adj","Percent.change.in.VE.by.allocation.after.weight.adj")]
 
 # add info re. enrichment/clustering
 main_nmr_assoc$No.in.cluster <- k_group_summary$n_features_in_group[match(main_nmr_assoc$Cluster.group,k_group_summary$k_group)]
@@ -445,20 +521,20 @@ for (i in 1:nrow(main_assoc)) {
       # sort by enrich p's
       cluster_enrich_sorted <- cluster_enrich[order(cluster_enrich$Ftest_pval),]
       # extract top class and enrich results
-      main_assoc[i,12] <- row.names(cluster_enrich_sorted)[1]
-      main_assoc[i,13] <- cluster_enrich_sorted[1,1]
-      main_assoc[i,14] <- cluster_enrich_sorted[1,2]
+      main_assoc[i,13] <- row.names(cluster_enrich_sorted)[1]
+      main_assoc[i,14] <- cluster_enrich_sorted[1,1]
+      main_assoc[i,15] <- cluster_enrich_sorted[1,2]
     }
     else {
-      main_assoc[i,12] <- NA
       main_assoc[i,13] <- NA
       main_assoc[i,14] <- NA
+      main_assoc[i,15] <- NA
     }
   }
   else {
-    main_assoc[i,12] <- NA
     main_assoc[i,13] <- NA
-    main_assoc[i,14] <- NA   
+    main_assoc[i,14] <- NA
+    main_assoc[i,15] <- NA   
   }
 }
 
@@ -467,8 +543,8 @@ main_assoc <- main_assoc[order(as.numeric(main_assoc$Allocation.p.Holm.adj)),]
 
 # re-order columns
 main_assoc <- main_assoc[,c("Source.platform", "Biochemical.name", "Super.pathway","Sub.pathway","Cluster.group","No.in.cluster","Allocation.beta",
-                            "Allocation.lower.95CI","Allocation.upper.95CI", "Allocation.p.Holm.adj", "Proportion.nom.assoc.in.cluster",
-                            "Cluster.super.pathway","Cluster.super.pathway.fold.enrich","Cluster.super.pathway.enrichP")]
+                            "Allocation.lower.95CI","Allocation.upper.95CI", "Allocation.p.Holm.adj", "Percent.change.in.VE.by.allocation.after.weight.adj",
+                            "Proportion.nom.assoc.in.cluster","Cluster.super.pathway","Cluster.super.pathway.fold.enrich","Cluster.super.pathway.enrichP")]
 
 dim(main_assoc)
 
@@ -484,32 +560,8 @@ table(main_assoc$Source.platform)
 main_assoc_identified <- main_assoc[main_assoc$Super.pathway != "Unclassified",]
 
 # save out required var
-filename <- paste0(results_dir,"Tables\\TableS5_primary_results.txt")
+filename <- paste0(results_dir,"Tables\\TableS6_primary_results.txt")
 write.table(main_assoc_identified,file=filename,sep="\t",row.names=F,quote=F)
-
-
-###################################################################################
-## Table ? - associated from PA
-####################################################################################
-# 
-# ## metabolon ##
-# # start with suppl table version
-# pa_assoc <- metab_pa_output_to_export
-# 
-# # restrict to representative and associated
-# pa_assoc <- pa_assoc[pa_assoc$Allocation.assoc.flag == 1,]
-# pa_assoc <- pa_assoc[,c("Biochemical.name", "Super.pathway", "Sub.pathway", "Allocation.beta","Allocation.lower.95CI","Allocation.upper.95CI",
-#                                         "Allocation.p", "State.in.intervention.group")]
-# 
-# # restrict to identified only
-# pa_assoc <- pa_assoc[!is.na(pa_assoc$Super.pathway),]
-# 
-# # sort
-# pa_assoc <-  pa_assoc[order(as.numeric(pa_assoc$Allocation.beta)),]
-# 
-# # save out required var
-# filename <- paste0(results_dir,"Tables\\Table3_pa_results.txt")
-# write.table(pa_assoc,file=filename,sep="\t",row.names=F,quote=F)
 
 
 ##################
@@ -523,3 +575,4 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
+rm(list=ls())

@@ -21,24 +21,10 @@ make.volcano = function(dtst, title, filename, plot_col, hline, legend_one,legen
                               main=title,xlab = "log2 median fold change (intervention/control)",
                               ylab="-log10(Holm-corrected p)", col=plot_col, pch=plot_shape, xlim=(c(-2,2)) ))
   abline(h=hline,lty=2, v=0)
-  legend(x="topright", inset=c(0,0),legend=legend_one, pch=18, bty="n", xjust=1, col=legend_col, cex=0.7)
-  legend(x="topleft", inset=c(0,0), legend=str_to_title(legend_two), pch=legend_shape, bty="n", xjust=1, cex=0.7)
+  legend(x="topright", inset=c(0,0),legend=legend_one, pch=18, bty="n", xjust=1, col=legend_col, cex=0.85)
+  legend(x="topleft", inset=c(0,0), legend=str_to_title(legend_two), pch=legend_shape, bty="n", xjust=1, cex=0.85)
   text(x=-1.8,y=hline+0.3,"p=0.05")
   invisible(dev.off())
-}
-
-make.volcano.dh = function(dtst, title, filename, plot_col, hline, legend_one,legend_col,plot_shape, legend_two, legend_shape){
-  pdf(paste0(filename,".pdf"))
-  volcano = dtst %>% ggplot(aes(x = raw_fc_log2medianfoldchange_int_over_control, y = -log10(rnt_lm_treat_HolmAdjP))) +
-    geom_point( aes(color = super.pathway)) +
-    scale_color_brewer(palette="Spectral") +
-    labs(x = "log2 median fold change (intervention/control)", y = "-log10(Holm-corrected p)") +
-    geom_density_2d( color = "grey50", show.legend = FALSE) +
-    labs(color = paste0("Super-pathway")) +
-    geom_hline(yintercept=hline,col="black",lty=2) +
-    theme_minimal()
-  print(volcano)
-  invisible(dev.off())  
 }
 
 #######################################
@@ -67,7 +53,7 @@ make.heatmap = function(dtst,feature_ids,filename,colcolours){
   
   #define row colours
   pcol <- brewer.pal(10,"Set3")
-  RowSideColors <- cbind(M.Class=c(rep(pcol[1],AA_ncols),rep(pcol[2],CHO_ncols),rep(pcol[3],Vit_ncols),rep(pcol[4],Energy_ncols),
+  RowSideColors <- cbind(Super.pathway=c(rep(pcol[1],AA_ncols),rep(pcol[2],CHO_ncols),rep(pcol[3],Vit_ncols),rep(pcol[4],Energy_ncols),
                                    rep(pcol[5],Lipid_ncols),rep(pcol[6],NMR.derived_nolc),rep(pcol[7],Nucleotide_ncols),
                                    rep(pcol[8],Peptide_ncols),rep(pcol[9],unknown_ncols),rep(pcol[10],Xeno_ncols) ))
   
@@ -96,9 +82,20 @@ make.heatmap = function(dtst,feature_ids,filename,colcolours){
            legendfun=function() showLegend(legend = c("Amino Acid","Carbohydrate","CoFac & Vit","Energy","Lipid",
                                                       "NMR derived","Nucleotide","Peptide","Unclassified","Xenobiotics"),
                                            col=c(pcol[1],pcol[2],pcol[3],pcol[4],pcol[5],pcol[6],
-                                                 pcol[7],pcol[8],pcol[9],pcol[10]), cex=0.6),
-           margins=c(5,8))
+                                                 pcol[7],pcol[8],pcol[9],pcol[10]), cex=0.8),
+           margins=c(8,8))
   invisible(dev.off())
+  # make postscript plot
+  postscript(paste0(filename,".eps"))
+  heatmap3(x=as.matrix(dtst_t),Rowv = features_den, Colv = samples_den,
+           ColSideColors = colcolours, RowSideColors = RowSideColors,labCol = empty.cols,labRow = empty.rows, scale="none",
+           legendfun=function() showLegend(legend = c("Amino Acid","Carbohydrate","CoFac & Vit","Energy","Lipid",
+                                                      "NMR derived","Nucleotide","Peptide","Unclassified","Xenobiotics"),
+                                           col=c(pcol[1],pcol[2],pcol[3],pcol[4],pcol[5],pcol[6],
+                                                 pcol[7],pcol[8],pcol[9],pcol[10]), cex=0.8),
+           margins=c(8,8))
+  invisible(dev.off())
+  
   # return modified dataset
   return(dtst)
 }
