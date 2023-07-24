@@ -1,6 +1,6 @@
 # This script runs posthoc analyses following the EFFECT OF THE INTERVENTION ON METABOLITES analysis
 
-# last run: 13th June 2023
+# last run: 19th July 2023
 
 ####################################################################################
 ####################################################################################
@@ -618,19 +618,19 @@ metabolite_plots_by_weight = lapply(compids_to_include, function(feature){
 
 
 # write out as pdf
-filename1 = paste0(results_dir,"Figures\\ForPaper\\Figure2a_metab_boxplots_by_weight.pdf")
+filename1 = paste0(results_dir,"Figures\\ForPaper\\FigureS4a_metab_boxplots_by_weight.pdf")
 pdf(filename1)
 metabolite_plots_by_weight[1]
 invisible(dev.off())
-filename2 = paste0(results_dir,"Figures\\ForPaper\\Figure2b_metab_boxplots_by_weight.pdf")
+filename2 = paste0(results_dir,"Figures\\ForPaper\\FigureS4b_metab_boxplots_by_weight.pdf")
 pdf(filename2)
 metabolite_plots_by_weight[2]
 invisible(dev.off())
-filename3 = paste0(results_dir,"Figures\\ForPaper\\Figure2c_metab_boxplots_by_weight.pdf")
+filename3 = paste0(results_dir,"Figures\\ForPaper\\FigureS4c_metab_boxplots_by_weight.pdf")
 pdf(filename3)
 metabolite_plots_by_weight[3]
 invisible(dev.off())
-filename4 = paste0(results_dir,"Figures\\ForPaper\\Figure2d_metab_boxplots_by_weight.pdf")
+filename4 = paste0(results_dir,"Figures\\ForPaper\\FigureS4d_metab_boxplots_by_weight.pdf")
 pdf(filename4)
 metabolite_plots_by_weight[4]
 invisible(dev.off())

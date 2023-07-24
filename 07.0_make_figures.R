@@ -1,6 +1,6 @@
 # This script makes figures from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 13th June 2023
+# last run: 19th July 2023
 
 ####################################################################################
 ####################################################################################
@@ -339,146 +339,9 @@ for (i in 1:nrow(lm_feature_ids)) {
 
 #### plot with all follow up features ####
 # make plot as pdf
-filename <- paste0(results_dir,"Figures\\ForPaper\\Figure3_heatmap_all_followup_features")
+filename <- paste0(results_dir,"Figures\\ForPaper\\Figure2_heatmap_all_followup_features")
 temp_data <- make.heatmap(dtst=heatmap_data_only,feature_ids=lm_feature_ids,filename=filename,colcolours=ColSideColors[,c(1,3)])
 
-
-####################################################################################
-####################################################################################
-### make plots for graphical abstract
-####################################################################################
-####################################################################################
-
-# need to calculate fold change at baseline
-
-# set up list for results output
-fc_interim_results_list <- list(metab=as.data.frame(matrix(data = NA, nrow = 1300, ncol = 18)),
-                                nmr=as.data.frame(matrix(data = NA, nrow = 300, ncol = 18)))
-
-# implement median fold change on raw data
-#datasets_to_run <- c(1,5)
-#for (j in 1:length(datasets_to_run)){
-  # set dataset
-dataset_to_use <- dataset_list$raw
-for (k in 1:length(dataset_to_use)){
-  print(paste0("Running fold change for: ",names(dataset_to_use)[k]))
-  # set warnings to print after each model run
-  op <- options("warn")
-  on.exit(options(op))
-  options(warn=1)
-  # define dataset - merge trial data with metabolite data
-  dtst <- merge(clinic_data_only[[k]],dataset_to_use[[k]],by="row.names")
-  rownames(dtst) <- dtst$Row.names
-  dtst <- dtst[,-1]
-  # define var list (ie list of metabolites)
-  depvar <- c(clean_feature_list[[k]]$id_for_matching,"glucose_mmol_l","insulin_uu_ml","hdl_mmol_l","trig_mmol_l","chol_mmol_l")
-  ## set up reporting var frequency
-  s = base::seq(from=1,to=length(depvar), by=100)
-  for (i in 1:length(depvar)) {
-    if(i %in% s){
-      print(paste0( "Now processing metabolite ", i, " of ", length(depvar) ))
-    }
-    mtb_name <- depvar[i]
-    mtb_name_e <- paste0(mtb_name,".e")
-    mtb_name_b <- paste0(mtb_name,".b")
-    fc_interim_results_list[[k]][i,1] <- mtb_name
-    mtb_b_col_ref <- which( colnames(dtst) == mtb_name_b)
-    # subset data to single feature
-    mtb <- dtst[!is.na(dtst[mtb_b_col_ref]), c("id","treat",mtb_name_b)]
-    # count non-missing 
-    fc_interim_results_list[[k]][i,2] <- nrow(mtb)
-    # count per group
-    fc_interim_results_list[[k]][i,4] <- nrow(mtb[mtb$treat == "Intervention",])
-    fc_interim_results_list[[k]][i,3] <- nrow(mtb[mtb$treat == "Control",])
-    # calculate means by group
-    mean_control <- mean(mtb[mtb$treat == "Control",3])
-    var_control <- var(mtb[mtb$treat == "Control",3])
-    med_control <- median(mtb[mtb$treat == "Control",3])
-    geom_control <- exp(mean(log(mtb[mtb$treat == "Control",3])))
-    fc_interim_results_list[[k]][i,5] <- mean_control
-    fc_interim_results_list[[k]][i,6] <- var_control
-    fc_interim_results_list[[k]][i,7] <- med_control
-    fc_interim_results_list[[k]][i,8] <- geom_control
-    mean_intervention <- mean(mtb[mtb$treat == "Intervention",3])
-    var_intervention <- var(mtb[mtb$treat == "Intervention",3])
-    med_intervention <- median(mtb[mtb$treat == "Intervention",3])
-    geom_intervention <- exp(mean(log(mtb[mtb$treat == "Intervention",3])))
-    fc_interim_results_list[[k]][i,9] <- mean_intervention
-    fc_interim_results_list[[k]][i,10] <- var_intervention
-    fc_interim_results_list[[k]][i,11] <- med_intervention
-    fc_interim_results_list[[k]][i,12] <- geom_intervention
-    # proceed to FC calculation only if metabolite is in the subset of selected metabolites from step 1
-    fc <- mean_intervention/mean_control
-    fc_interim_results_list[[k]][i,13] <- fc
-    fc_interim_results_list[[k]][i,14] <- log2(fc)
-    fc_med <- med_intervention/med_control
-    fc_interim_results_list[[k]][i,15] <- fc_med
-    fc_interim_results_list[[k]][i,16] <- log2(fc_med)
-    fc_geom <- geom_intervention/geom_control
-    fc_interim_results_list[[k]][i,17] <- fc_geom
-    fc_interim_results_list[[k]][i,18] <- log2(fc_geom)
-  }
-  # name column headers
-  names(fc_interim_results_list[[k]])[1] <- "feature_id"
-  names(fc_interim_results_list[[k]])[2] <- "fc_n_samples"
-  names(fc_interim_results_list[[k]])[3] <- "fc_n_control"
-  names(fc_interim_results_list[[k]])[4] <- "fc_n_intervention"
-  
-  names(fc_interim_results_list[[k]])[5] <- "fc_mean_in_controls"
-  names(fc_interim_results_list[[k]])[6] <- "fc_var_in_controls"
-  names(fc_interim_results_list[[k]])[7] <- "fc_median_in_controls"
-  names(fc_interim_results_list[[k]])[8] <- "fc_geom_in_controls"
-  
-  names(fc_interim_results_list[[k]])[9] <- "fc_mean_in_intervention"
-  names(fc_interim_results_list[[k]])[10] <- "fc_var_in_intervention"
-  names(fc_interim_results_list[[k]])[11] <- "fc_median_in_intervention"
-  names(fc_interim_results_list[[k]])[12] <- "fc_geom_in_intervention"
-  
-  names(fc_interim_results_list[[k]])[13] <- "fc_meanfoldchange_int_over_control"
-  names(fc_interim_results_list[[k]])[14] <- "fc_log2meanfoldchange_int_over_control"
-  names(fc_interim_results_list[[k]])[15] <- "fc_medianfoldchange_int_over_control"
-  names(fc_interim_results_list[[k]])[16] <- "fc_log2medianfoldchange_int_over_control"
-  names(fc_interim_results_list[[k]])[17] <- "fc_geomfoldchange_int_over_control"
-  names(fc_interim_results_list[[k]])[18] <- "fc_log2geomfoldchange_int_over_control"   
-  
-  names(fc_interim_results_list[[k]])[2:18] <- paste0("raw_", names(fc_interim_results_list[[k]])[2:18])
-}
-
-## put all baseline foldchange values in a matrix
-# combine nmr and metab
-fc_results_combined <- rbind(fc_interim_results_list$metab,fc_interim_results_list$nmr)
-# combine with endpoint
-fc_both <- merged_lm_results[,c("feature_id","raw_fc_log2medianfoldchange_int_over_control","rnt_lm_treat_HolmAdjP_flag")]
-fc_both$raw_fc_log2medianfoldchange_int_over_control_baseline <- fc_results_combined$raw_fc_log2medianfoldchange_int_over_control[match(fc_both$feature_id,fc_results_combined$feature_id)]
-
-# restrict to associated
-fc_both <- fc_both[fc_both$rnt_lm_treat_HolmAdjP_flag ==1,]
-
-# add blank row
-#fc_both <- rbind(fc_both,data.frame(feature_id ="blank",raw_fc_log2medianfoldchange_int_over_control=0,raw_fc_log2medianfoldchange_int_over_control_baseline=0,rnt_lm_treat_HolmAdjP_flag=0))
-# make into matrices
-baseline_matrix <- matrix(fc_both$raw_fc_log2medianfoldchange_int_over_control_baseline,nrow=6,ncol=31)                                                                                                                                    
-endpoint_matrix <- matrix(fc_both$raw_fc_log2medianfoldchange_int_over_control,nrow=6,ncol=31)                                                                                                                                    
-overall <- rbind(endpoint_matrix,baseline_matrix)
-
-# heatmaps
-#paletteLength=50
-#myColor <- colorRampPalette(c("blue","white","red"))(paletteLength)
-#myBreaks <- c(seq(-0.90,0,length.out=ceiling(paletteLength/2) + 1),
-            #  seq(1.4/paletteLength,1.8,length.out=floor(paletteLength/2)))
-
-#heatmap3(baseline_matrix,cor=color.palette,breaks=palette.breaks)
-
-#heatmap3(baseline_matrix,balanceColor = T, Rowv = NA, Colv = NA, scale="none",labRow = F,labCol = F)
-#heatmap3(endpoint_matrix,balanceColor = T, Rowv = NA, Colv = NA, scale="none",labRow = F,labCol = F)
-
-filename <- paste0(results_dir,"Figures\\ForPaper\\GA_heatmap.pdf")
-pdf(filename)
-heatmap3(overall,balanceColor = T, Rowv = NA, Colv = NA, scale="none",labRow = F,labCol = F)
-dev.off()
-
-#hist(endpoint_matrix)
-#hist(baseline_matrix)
 
 ##################
 ## QUIT SESSION ##

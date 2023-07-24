@@ -17,10 +17,10 @@ head(sysrev)
 sysrev_new <- sysrev %>% separate(`SRR (95% CI)`, c("SRR","95%CI"), sep = "(?=[(])")
 
 # read in my results
-mymsresults <- readxl::read_excel("../../20221107_Corbin-DiRECTmetabolomics_suppl7_Suppl.Tables.xlsx", sheet=3, skip=5, na = c("NA"))
+mymsresults <- readxl::read_excel("../../20230619_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=3, skip=5, na = c("NA"))
 dim(mymsresults)
 
-mynmrresults <- readxl::read_excel("../../20221107_Corbin-DiRECTmetabolomics_suppl7_Suppl.Tables.xlsx", sheet=2, skip=5, na = c("NA"))
+mynmrresults <- readxl::read_excel("../../20230619_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=2, skip=5, na = c("NA"))
 dim(mynmrresults)
 
 # process results and combine
@@ -84,11 +84,13 @@ myplot <- ggplot(myresults_sig_toplot, aes(x=Allocation.beta,y=SRR,label=Biochem
   geom_smooth(method="lm",linetype="dashed", color = "black") +
   geom_point(aes(colour=-log10(p))) +
   geom_text_repel(data = subset(myresults_sig_toplot, p < 0.05 & Allocation.assoc.flag == 1), size = 3) +
-  ylim(-0.5,1) +
-  labs(x = "Change in metabolite level (normalised SD units) after DiRECT intervention", y="Log(relative risk) of T2D per 1-SD increase in metabolite") +
+  ylim(-0.3,1) +
+  xlim(-0.8,0.7) +
+  labs(x = "Difference in metabolite level (normalised SD units) after DiRECT intervention", y="Log(relative risk) of type 2 diabetes\nper 1-SD increase in metabolite") +
   geom_vline(xintercept = 0, lty="dotted") +
   geom_hline(yintercept = 0, lty="dotted") +
-  theme_bw()
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
 print(myplot)
 dev.off()
 
