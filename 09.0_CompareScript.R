@@ -4,6 +4,7 @@
 library('tidyverse')
 library('readxl')
 library('ggrepel')
+library('Hmisc')
 
 # capture output
 date <- Sys.Date()
@@ -17,10 +18,10 @@ head(sysrev)
 sysrev_new <- sysrev %>% separate(`SRR (95% CI)`, c("SRR","95%CI"), sep = "(?=[(])")
 
 # read in my results
-mymsresults <- readxl::read_excel("../../20230619_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=3, skip=5, na = c("NA"))
+mymsresults <- readxl::read_excel("../../../Submission3/20230725_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=3, skip=5, na = c("NA"))
 dim(mymsresults)
 
-mynmrresults <- readxl::read_excel("../../20230619_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=2, skip=5, na = c("NA"))
+mynmrresults <- readxl::read_excel("../../../Submission3/20230725_Corbin-DiRECTmetabolomics_ESM2_Tables.xlsx", sheet=2, skip=5, na = c("NA"))
 dim(mynmrresults)
 
 # process results and combine
@@ -78,15 +79,26 @@ nrow(myresults_sig[myresults_sig$Allocation.assoc.flag == 1 & myresults_sig$p <=
 
 myresults_sig_toplot <- myresults_sig[!is.na(myresults_sig$SRR),] 
 
+# make first letter caps
+myresults_sig_toplot$Biochemical.name.for.figure <- str_to_title(myresults_sig_toplot$Biochemical.name)
+# manually replace biochem names where upper case added in second part of name
+myresults_sig_toplot <- myresults_sig_toplot %>% mutate(`Biochemical.name.for.figure` = replace(`Biochemical.name.for.figure`, `Biochemical.name.for.figure` == "3-Methyl-2-Oxovalerate" , "3-Methyl-2-oxovalerate")) 
+myresults_sig_toplot <- myresults_sig_toplot %>% mutate(`Biochemical.name.for.figure` = replace(`Biochemical.name.for.figure`, `Biochemical.name.for.figure` == "3-Methyl-2-Oxobutyrate" , "3-Methyl-2-oxobutyrate")) 
+myresults_sig_toplot <- myresults_sig_toplot %>% mutate(`Biochemical.name.for.figure` = replace(`Biochemical.name.for.figure`, `Biochemical.name.for.figure` == "N-Acetylglycine" , "N-acetylglycine")) 
+myresults_sig_toplot <- myresults_sig_toplot %>% mutate(`Biochemical.name.for.figure` = replace(`Biochemical.name.for.figure`, `Biochemical.name.for.figure` == "Alpha-Hydroxyisovalerate" , "\u03b1-hydroxyisovalerate")) 
+
 # make plot
 pdf(file=paste0(date,"_ComparePlot.pdf"),width = 9, height = 6)
-myplot <- ggplot(myresults_sig_toplot, aes(x=Allocation.beta,y=SRR,label=Biochemical.name)) +
+#postscript(file=paste0(date,"_ComparePlot.eps"),width = 9, height = 6)
+myplot <- ggplot(myresults_sig_toplot, aes(x=Allocation.beta,y=SRR,label=Biochemical.name.for.figure)) +
   geom_smooth(method="lm",linetype="dashed", color = "black") +
   geom_point(aes(colour=-log10(p))) +
+  labs(color = bquote("-log"[10]*"("*italic(p)*")")) +
   geom_text_repel(data = subset(myresults_sig_toplot, p < 0.05 & Allocation.assoc.flag == 1), size = 3) +
-  ylim(-0.3,1) +
-  xlim(-0.8,0.7) +
-  labs(x = "Difference in metabolite level (normalised SD units) after DiRECT intervention", y="Log(relative risk) of type 2 diabetes\nper 1-SD increase in metabolite") +
+  scale_y_continuous(breaks=seq(-0.25,1.0,0.25),limits=c(-0.25,1.0)) +
+  scale_x_continuous(breaks=seq(-1,1,0.25),limits=c(-0.75,0.75)) +
+  xlab("Difference in metabolite level (normalised SD units) after DiRECT intervention") +
+  ylab(bquote(atop("Log"[e] ~ "(relative risk) of type 2 diabetes" ,"per 1-SD increase in metabolite"))) +
   geom_vline(xintercept = 0, lty="dotted") +
   geom_hline(yintercept = 0, lty="dotted") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -102,9 +114,9 @@ write.table(myresults_sig[!is.na(myresults_sig$SRR),c(1:6, 14:15)], "TableS8_srr
 
 ##################
 ## QUIT SESSION ##
-##################
 
-# capture session info
+# capture session info##################
+
 print("Session information:")
 sessionInfo()
 
