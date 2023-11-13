@@ -1,6 +1,6 @@
 # This script makes figures from analyses relating to the EFFECT OF THE INTERVENTION ON METABOLITES
 
-# last run: 19th July 2023
+# last run: 7th September 2023
 
 ####################################################################################
 ####################################################################################
@@ -166,16 +166,16 @@ metab_col <- with(merged_lm_results, data.frame(pathway = levels(super.pathway),
 merged_lm_results$panel <- as.factor(merged_lm_results$panel)
 metab_shape <- with(merged_lm_results, data.frame(panel = levels(panel),shape = c(18,20) ))
 
-# make volcano
-filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS2_lm_results_all_volcano")
-make.volcano(dtst=merged_lm_results, title="", filename=filename, plot_col=metab_col$colour[match(merged_lm_results$super.pathway,metab_col$pathway)], 
-             hline=-log10(0.05), legend_one=as.character(metab_col$pathway),legend_col=metab_col$colour,
-             plot_shape=metab_shape$shape[match(merged_lm_results$panel,metab_shape$panel)],
-             legend_two=as.character(metab_shape$panel), legend_shape=metab_shape$shape)
-
-## histogram (aim to illustrate density of points up/down)
-hist(-log10(merged_lm_results$rnt_lm_treat_HolmAdjP),main="",ylab="",xlab="",yaxt = "n")
-
+# # make volcano
+# filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS2_lm_results_all_volcano")
+# make.volcano(dtst=merged_lm_results, title="", filename=filename, plot_col=metab_col$colour[match(merged_lm_results$super.pathway,metab_col$pathway)], 
+#              hline=-log10(0.05), legend_one=as.character(metab_col$pathway),legend_col=metab_col$colour,
+#              plot_shape=metab_shape$shape[match(merged_lm_results$panel,metab_shape$panel)],
+#              legend_two=as.character(metab_shape$panel), legend_shape=metab_shape$shape)
+# 
+# ## histogram (aim to illustrate density of points up/down)
+# hist(-log10(merged_lm_results$rnt_lm_treat_HolmAdjP),main="",ylab="",xlab="",yaxt = "n")
+# 
 ####################################################################################
 ####################################################################################
 ## presentation of enrichment - Figure S3
@@ -189,7 +189,7 @@ class_info$associated <- merged_lm_results$rnt_lm_treat_HolmAdjP_flag[match(clas
 class_info_lm_only <- class_info[!is.na(class_info$associated),]
 dim(class_info_lm_only)
 
-# separate out associated 
+# separate out associated
 class_info_associated <- class_info_lm_only[class_info_lm_only$associated ==1,]
 
 # extract numbers for stack
@@ -213,17 +213,17 @@ names(stacked_bar_data)[1] <- "super.pathway"
 names(stacked_bar_data)[2] <- "freq_overall"
 names(stacked_bar_data)[3] <- "Percentage.in.class"
 
-# plot stacked bar
-filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS3_class_distribution.pdf")
-pdf(filename)
-ggplot(stacked_bar_data, aes(fill=super.pathway,y=Percentage.in.class,x=outcome)) +
-  geom_bar(position="stack",stat="identity",colour="black",size=0.1) +
-  theme_bw() + 
-  theme(axis.title.x = element_blank()) +
-  labs(y="Percentage in class") +
-  scale_fill_manual(values=c("#88CCEE","#CC6677","#DDCC77","#117733","#332288","#AA4499",
-                             "#44AA99","#999933","#882255","#661100","#6699CC","#888888"))
-invisible(dev.off())
+# # plot stacked bar
+# filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS3_class_distribution.pdf")
+# pdf(filename)
+# ggplot(stacked_bar_data, aes(fill=super.pathway,y=Percentage.in.class,x=outcome)) +
+#   geom_bar(position="stack",stat="identity",colour="black",size=0.1) +
+#   theme_bw() + 
+#   theme(axis.title.x = element_blank()) +
+#   labs(y="Percentage in class") +
+#   scale_fill_manual(values=c("#88CCEE","#CC6677","#DDCC77","#117733","#332288","#AA4499",
+#                              "#44AA99","#999933","#882255","#661100","#6699CC","#888888"))
+# invisible(dev.off())
 
 
 ####################################################################################
@@ -231,15 +231,15 @@ invisible(dev.off())
 ## presentation of N samples/beta SE - Figure S1
 ####################################################################################
 ####################################################################################
-
-vline_val <- 0.4*max(results_list$metab$rnt_lm_n_samples_in_model)
-
-filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS1_N_SE_plot.pdf")
-pdf(filename)
-plot(results_list$metab$rnt_lm_n_samples_in_model,results_list$metab$rnt_lm_treat_SE,
-     main="",xlab="Number of samples in linear model", ylab="Standard error of effect estimate (beta)")
-abline(v=vline_val,lty=2)
-invisible(dev.off())
+# 
+# vline_val <- 0.4*max(results_list$metab$rnt_lm_n_samples_in_model)
+# 
+# filename <- paste0(results_dir,"Figures\\ForPaper\\FigureS1_N_SE_plot.pdf")
+# pdf(filename)
+# plot(results_list$metab$rnt_lm_n_samples_in_model,results_list$metab$rnt_lm_treat_SE,
+#      main="",xlab="Number of samples in linear model", ylab="Standard error of effect estimate (beta)")
+# abline(v=vline_val,lty=2)
+# invisible(dev.off())
 
 ####################################################################################
 ####################################################################################
@@ -248,16 +248,16 @@ invisible(dev.off())
 ####################################################################################
 
 # restrict to only those metabolites for which lm is main result
-
-filename <- paste0(results_dir,"Figures\\NMR_N_hist.pdf")
-pdf(filename)
-hist(lm_results_list$nmr$rnt_lm_n_samples_in_model,main="",xlab="No. of samples in model")
-invisible(dev.off())
-
-filename <- paste0(results_dir,"Figures\\Metabolon_N_hist.pdf")
-pdf(filename)
-hist(lm_results_list$metab$rnt_lm_n_samples_in_model,main="",xlab="No. of samples in model")
-invisible(dev.off())
+# 
+# filename <- paste0(results_dir,"Figures\\NMR_N_hist.pdf")
+# pdf(filename)
+# hist(lm_results_list$nmr$rnt_lm_n_samples_in_model,main="",xlab="No. of samples in model")
+# invisible(dev.off())
+# 
+# filename <- paste0(results_dir,"Figures\\Metabolon_N_hist.pdf")
+# pdf(filename)
+# hist(lm_results_list$metab$rnt_lm_n_samples_in_model,main="",xlab="No. of samples in model")
+# invisible(dev.off())
 
 #################################################################################### 
 ####################################################################################
@@ -283,44 +283,44 @@ colfunc_green <- colorRampPalette(c("light green", "dark green"))
 colour_spec <- heatmap_dataset[,1:4]
 colour_spec$weight.change.quartiles <- ntile(colour_spec$weight.change, 4)
 # define colour by intervention group
-colour_spec$treatment.grp <- "blue"
-colour_spec[colour_spec$treat == "Intervention", c("treatment.grp")] <- "goldenrod"
+colour_spec$Treatment.group <- "blue"
+colour_spec[colour_spec$treat == "Intervention", c("Treatment.group")] <- "goldenrod"
 # define colour by % weight change
 colour_spec$weight.change.grp <- (colfunc_blue(4))[colour_spec$weight.change.quartiles]
 # define colour by diabetes reversal status
-colour_spec$remission.status <- "black"
-colour_spec[colour_spec$reversal == "No", c("remission.status")] <- "white"
+colour_spec$Remission.group <- "black"
+colour_spec[colour_spec$reversal == "No", c("Remission.group")] <- "white"
 
 # specify heatmap column colours
-ColSideColors <- cbind(treatment.grp=colour_spec$treatment.grp,weight.grp=colour_spec$weight.change.grp,remission.status=colour_spec$remission.status)
+ColSideColors <- cbind(Treatment.group=colour_spec$Treatment.group,weight.grp=colour_spec$weight.change.grp,Remission.group=colour_spec$Remission.group)
 
 # restrict to data only
 heatmap_data_only <- heatmap_dataset[,c(5:ncol(heatmap_dataset) )]
 dim(heatmap_data_only)
 heatmap_data_only[1:5,1:5]
 
-# generate id based on super.pathway (instead of comp.id)
+# generate id based on Super.pathway (instead of comp.id)
 lm_feature_ids <- as.data.frame(names(heatmap_data_only))
 names(lm_feature_ids)[1] <- "feature_id"
 # create ordering var
 lm_feature_ids$data_order <- seq(1,nrow(lm_feature_ids),1)
-# bring in super.pathway and mass info and numeric compid
-lm_feature_ids$super.pathway <- class_info_associated$super.pathway[match(lm_feature_ids$feature_id,class_info_associated$feature_id)]
+# bring in Super.pathway and mass info and numeric compid
+lm_feature_ids$Super.pathway <- class_info_associated$super.pathway[match(lm_feature_ids$feature_id,class_info_associated$feature_id)]
 
-# order by super.pathway and id
-lm_feature_ids <- lm_feature_ids[order(lm_feature_ids$super.pathway,lm_feature_ids$feature_id),]
+# order by Super.pathway and id
+lm_feature_ids <- lm_feature_ids[order(lm_feature_ids$Super.pathway,lm_feature_ids$feature_id),]
 # make short name
 lm_feature_ids$shortname <- NA
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Amino Acid"), "shortname" ] <- "AA"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Carbohydrate"), "shortname" ] <- "CHO"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Cofactors and Vitamins"), "shortname" ] <- "CoFac & Vit"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Energy"), "shortname" ] <- "Energy"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Lipid"), "shortname" ] <- "Lipid"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Nucleotide"), "shortname" ] <- "Nucleotide"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Peptide"), "shortname" ] <- "Peptide"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Xenobiotics"), "shortname" ] <- "Xeno"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "NMR ratio/percentage"), "shortname" ] <- "NMR.derived"
-lm_feature_ids[which(lm_feature_ids$super.pathway == "Unclassified"), "shortname" ] <- "Unclassified"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Amino Acid"), "shortname" ] <- "AA"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Carbohydrate"), "shortname" ] <- "CHO"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Cofactors and Vitamins"), "shortname" ] <- "CoFac & Vit"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Energy"), "shortname" ] <- "Energy"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Lipid"), "shortname" ] <- "Lipid"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Nucleotide"), "shortname" ] <- "Nucleotide"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Peptide"), "shortname" ] <- "Peptide"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Xenobiotics"), "shortname" ] <- "Xeno"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "NMR ratio/percentage"), "shortname" ] <- "NMR.derived"
+lm_feature_ids[which(lm_feature_ids$Super.pathway == "Unclassified"), "shortname" ] <- "Unclassified"
 
 # create unique IDs for each metabolite in pathway
 lm_feature_ids$class_count <- as.numeric(ave(lm_feature_ids$feature_id, lm_feature_ids$shortname, FUN = seq_along))
@@ -338,10 +338,13 @@ for (i in 1:nrow(lm_feature_ids)) {
 }
 
 #### plot with all follow up features ####
-# make plot as pdf
+# make plot as pdf & eps
 filename <- paste0(results_dir,"Figures\\ForPaper\\Figure2_heatmap_all_followup_features")
 temp_data <- make.heatmap(dtst=heatmap_data_only,feature_ids=lm_feature_ids,filename=filename,colcolours=ColSideColors[,c(1,3)])
 
+# make plot with default legend
+filename <- paste0(results_dir,"Figures\\ForPaper\\Figure2_heatmap_all_followup_features_default_legend")
+temp_data <- make.heatmap.with.legend(dtst=heatmap_data_only,feature_ids=lm_feature_ids,filename=filename,colcolours=ColSideColors[,c(1,3)])
 
 ##################
 ## QUIT SESSION ##
@@ -354,5 +357,5 @@ sessionInfo()
 ####################################################################################
 # save output
 sink()
-rm(list=ls())
+#rm(list=ls())
 

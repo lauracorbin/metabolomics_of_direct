@@ -100,6 +100,66 @@ make.heatmap = function(dtst,feature_ids,filename,colcolours){
   return(dtst)
 }
 
+make.heatmap.with.legend = function(dtst,feature_ids,filename,colcolours){
+  # replace column names in data
+  feature_id_list <- as.data.frame(names(dtst))
+  feature_id_list$feature_label_id <- feature_ids$feature_label_id[match(feature_id_list$`names(dtst)`,feature_ids$feature_id)]
+  names(dtst) <- feature_id_list$feature_label_id
+  # order by name
+  dtst <- dtst[,order(names(dtst))]
+  
+  # count no. of features per class - needs to be in alphabetical order
+  AA_ncols <- length(grep( "AA" , names(dtst ) ) )
+  CHO_ncols <- length(grep( "CHO" , names(dtst ) ) )
+  Vit_ncols <- length(grep( "CoFac & Vit" , names(dtst) ) )
+  Energy_ncols <- length(grep( "Energy" , names(dtst ) ) )
+  Lipid_ncols <- length(grep( "Lipid" , names(dtst ) ) )
+  NMR.derived_nolc <- length(grep( "NMR.derived" , names(dtst ) ) )
+  Nucleotide_ncols <- length(grep( "Nucleotide" , names(dtst ) ) )
+  Peptide_ncols <- length(grep( "Peptide" , names(dtst ) ) )
+  unknown_ncols <- length(grep( "Unclassified" , names(dtst ) ) )
+  Xeno_ncols <- length(grep( "Xeno" , names(dtst ) ) )
+  
+  #define row colours
+  pcol <- brewer.pal(10,"Set3")
+  RowSideColors <- cbind(Super.pathway=c(rep(pcol[1],AA_ncols),rep(pcol[2],CHO_ncols),rep(pcol[3],Vit_ncols),rep(pcol[4],Energy_ncols),
+                                         rep(pcol[5],Lipid_ncols),rep(pcol[6],NMR.derived_nolc),rep(pcol[7],Nucleotide_ncols),
+                                         rep(pcol[8],Peptide_ncols),rep(pcol[9],unknown_ncols),rep(pcol[10],Xeno_ncols) ))
+  
+  # transpose
+  dtst_t <- t(dtst)
+  dim(dtst_t)
+  
+  # set up empty vectors to use in place of row & column names
+  empty.cols = unlist(lapply(colnames(dtst),function(x){
+    a = " "
+  }))
+  empty.rows = unlist(lapply(row.names(dtst),function(x){
+    a = " "
+  }))
+  
+  # make dendograms
+  features_dist <- dist(dtst_t)
+  features_den <- as.dendrogram(hclust(features_dist, method = "ward.D2"))
+  samples_dist <- dist(t(dtst_t))
+  samples_den <- as.dendrogram(hclust(samples_dist, method = "ward.D2"))
+  
+  # make pdf plot
+  pdf(paste0(filename,".pdf"))
+  heatmap3(x=as.matrix(dtst_t),Rowv = features_den, Colv = samples_den,
+           ColSideColors = colcolours, RowSideColors = RowSideColors,labCol = empty.cols,labRow = empty.rows, scale="none",
+           margins=c(8,8))
+  invisible(dev.off())
+  # make postscript plot
+  postscript(paste0(filename,".eps"))
+  heatmap3(x=as.matrix(dtst_t),Rowv = features_den, Colv = samples_den,
+           ColSideColors = colcolours, RowSideColors = RowSideColors,labCol = empty.cols,labRow = empty.rows, scale="none",
+           margins=c(8,8))
+  invisible(dev.off())
+  
+  # return modified dataset
+  return(dtst)
+}
 
 ########################################
 ############## pca plots  ##############
